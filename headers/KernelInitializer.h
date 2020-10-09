@@ -6,20 +6,20 @@
 class KernelInitializer {
  public:
   virtual Eigen::MatrixXd generate(int lastLayerSize, int currentLayerSize) = 0;
-  virtual std::unique_ptr<KernelInitializer> getKernelInitializer() const = 0;
+  virtual std::unique_ptr<KernelInitializer> clone() const = 0;
 };
 
 namespace Initializers {
 class HeNormal : public KernelInitializer {
  public:
   Eigen::MatrixXd generate(int lastLayerSize, int currentLayerSize);
-  std::unique_ptr<KernelInitializer> getKernelInitializer() const;
+  std::unique_ptr<KernelInitializer> clone() const;
 };
 
 class GlorotNormal : public KernelInitializer {
  public:
   Eigen::MatrixXd generate(int lastLayerSize, int currentLayerSize);
-  std::unique_ptr<KernelInitializer> getKernelInitializer() const;
+  std::unique_ptr<KernelInitializer> clone() const;
 };
 }  // namespace Initializers
 

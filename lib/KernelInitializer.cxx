@@ -20,8 +20,7 @@ MatrixXd Initializers::HeNormal::generate(int lastLayerSize,
   return matrix;
 }
 
-unique_ptr<KernelInitializer> Initializers::HeNormal::getKernelInitializer()
-    const {
+unique_ptr<KernelInitializer> Initializers::HeNormal::clone() const {
   return make_unique<Initializers::HeNormal>();
 }
 
@@ -39,7 +38,6 @@ MatrixXd Initializers::GlorotNormal::generate(int lastLayerSize,
   return matrix;
 }
 
-unique_ptr<KernelInitializer> Initializers::GlorotNormal::getKernelInitializer()
-    const {
+unique_ptr<KernelInitializer> Initializers::GlorotNormal::clone() const {
   return make_unique<Initializers::GlorotNormal>();
 }

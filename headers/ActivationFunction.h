@@ -9,7 +9,7 @@ class Activation {
  public:
   virtual Eigen::MatrixXd actFn(const Eigen::MatrixXd& matrix) = 0;
   virtual Eigen::MatrixXd actFnGrad(const Eigen::MatrixXd& matrix) = 0;
-  virtual std::unique_ptr<Activation> getActivation() const = 0;
+  virtual std::unique_ptr<Activation> clone() const = 0;
 };
 
 namespace Activations {
@@ -17,7 +17,7 @@ class Sigmoid : public Activation {
  public:
   Eigen::MatrixXd actFn(const Eigen::MatrixXd& matrix);
   Eigen::MatrixXd actFnGrad(const Eigen::MatrixXd& matrix);
-  std::unique_ptr<Activation> getActivation() const;
+  std::unique_ptr<Activation> clone() const;
 };
 
 class Relu : public Activation {
@@ -28,7 +28,7 @@ class Relu : public Activation {
   Eigen::MatrixXd actFn(const Eigen::MatrixXd& matrix);
   Eigen::MatrixXd actFnGrad(const Eigen::MatrixXd& matrix);
   double getAlpha();
-  std::unique_ptr<Activation> getActivation() const;
+  std::unique_ptr<Activation> clone() const;
 };
 
 class LeakyRelu : public Relu {

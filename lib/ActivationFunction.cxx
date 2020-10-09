@@ -16,9 +16,7 @@ MatrixXd Sigmoid::actFnGrad(const MatrixXd& matrix) {
                              matrix);
 }
 
-unique_ptr<Activation> Sigmoid::getActivation() const {
-  return make_unique<Sigmoid>();
-}
+unique_ptr<Activation> Sigmoid::clone() const { return make_unique<Sigmoid>(); }
 
 Relu::Relu(double alpha) : alpha(alpha) {}
 
@@ -38,6 +36,4 @@ MatrixXd Relu::actFnGrad(const MatrixXd& matrix) {
 
 double Relu::getAlpha() { return alpha; }
 
-unique_ptr<Activation> Relu::getActivation() const {
-  return make_unique<Relu>(alpha);
-}
+unique_ptr<Activation> Relu::clone() const { return make_unique<Relu>(alpha); }

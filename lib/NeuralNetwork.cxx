@@ -56,8 +56,7 @@ bool checkForNan(vector<VectorXd> value) {
 
 NeuralNetwork::NeuralNetwork(const vector<int>& layerSizes,
                              vector<MatrixXd> weights, int expectedOutputSize,
-                             VectorXd (*outputErr)(const VectorXd& outputData,
-                                                   const VectorXd& lastLayer),
+                             const CostFunction& costFn,
                              const Activation& activation,
                              const Optimizer<MatrixXd>& optimizer) {
   if (layerSizes.size() < 2)
@@ -77,7 +76,8 @@ NeuralNetwork::NeuralNetwork(const vector<int>& layerSizes,
       throw invalid_argument(
           "weight matrices does not have correct number of columns");
   }
-  if (expectedOutputSize != -1 && outputErr == calcOutputErrDefaultFn)
+  if (expectedOutputSize != -1 &&
+      dynamic_cast<const CostFns::CrossEntropy*>(&costFn) != nullptr)
     throw invalid_argument(
         "please define both expectedOutputSize and outputErr fn together");
 
@@ -93,14 +93,13 @@ NeuralNetwork::NeuralNetwork(const vector<int>& layerSizes,
       this->LayersProps.emplace_back(make_unique<InputLayer>(layerSizes[i]));
   }
   if (expectedOutputSize == -1) this->expectedOutputSize = layerSizes.back();
-  this->calcOutputErr = outputErr;
-  this->optimizer = optimizer.getOptimizer();
+  this->costFn = costFn.clone();
+  this->optimizer = optimizer.clone();
 }
 
 NeuralNetwork::NeuralNetwork(vector<unique_ptr<Layer>>& layers,
                              const Optimizer<MatrixXd>& optimizer,
-                             VectorXd (*outputErr)(const VectorXd& outputData,
-                                                   const VectorXd& lastLayer)) {
+                             const CostFunction& costFn) {
   if (layers.size() < 2)
     throw invalid_argument("there should atleast be 2 layers");
   if (layers[0]->getName() != InputLayer::name)
@@ -110,9 +109,9 @@ NeuralNetwork::NeuralNetwork(vector<unique_ptr<Layer>>& layers,
     this->LayersProps.emplace_back(move(layers[i]));
     if (i > 0) LayersProps[i]->initializeWeights(LayersProps[i - 1]->size());
   }
-  this->optimizer = optimizer.getOptimizer();
+  this->optimizer = optimizer.clone();
   this->expectedOutputSize = LayersProps.back()->size();
-  this->calcOutputErr = outputErr;
+  this->costFn = costFn.clone();
 }
 
 MatrixXd NeuralNetwork::printResults(
@@ -120,8 +119,7 @@ MatrixXd NeuralNetwork::printResults(
     const double lambda,
     double (*accuracyFn)(const VectorXd& outputData,
                          const VectorXd& expectedOutput),
-    double (*costFn)(const VectorXd& outputData,
-                     const VectorXd& expectedOutput)) {
+    const CostFunction& costFn) {
   assertInputAndOutputData(inputData, expectedOutput);
   MatrixXd outputData(expectedOutput.rows(), expectedOutput.cols());
   for (int i = 0; i < expectedOutput.rows(); i++) {
@@ -144,18 +142,17 @@ MatrixXd NeuralNetwork::allOutputs(const MatrixXd& inputData) {
   return outputData;
 }
 
-double NeuralNetwork::calcTotalCost(
-    const MatrixXd& outputData, const MatrixXd& expectedOutputData,
-    const double lambda,
-    double (*costFn)(const VectorXd& outputData,
-                     const VectorXd& expectedOutput)) {
+double NeuralNetwork::calcTotalCost(const MatrixXd& outputData,
+                                    const MatrixXd& expectedOutputData,
+                                    const double lambda,
+                                    const CostFunction& costFn) {
   assertOutputData(expectedOutputData);
   double costSum = 0;
   for (int i = 0; i < outputData.rows(); i++) {
     VectorXd lastLayerValues = outputData.row(i);
     // cout << "input[" << i << "]: lasy layer values\n"
     // << lastLayerValues << endl;
-    costSum += costFn(lastLayerValues, expectedOutputData.row(i));
+    costSum += costFn.costFn(lastLayerValues, expectedOutputData.row(i));
   }
   // cout << endl;
   costSum *= -1;
@@ -226,8 +223,7 @@ vector<vector<double>> NeuralNetwork::trainNetwork(
     const MatrixXd& inputData, const MatrixXd& outputData, const double lambda,
     const int batchSize, const int totalRounds,
     const bool printWeightsAndLastChange, int costRecordInterval,
-    double (*costFn)(const VectorXd& outputData,
-                     const VectorXd& expectedOutput)) {
+    const CostFunction& costFn) {
   assertLambda(lambda);
   assertInputAndOutputData(inputData, outputData);
   if (costRecordInterval <= 0)
@@ -274,13 +270,13 @@ vector<MatrixXd> NeuralNetwork::getDecBy(const VectorXd& inputData,
                                          const double lambda,
                                          vector<MatrixXd> decBy) {
   vector<VectorXd> layersValues = calcAllNodes(inputData);
-  if (checkForNan(layersValues)) throw runtime_error("layerValues nan found\n");
+  if (checkForNan(layersValues)) throw runtime_error("layerValues nan found");
   vector<VectorXd> dell = calcDell(outputData, layersValues);
-  if (checkForNan(dell)) throw runtime_error("dell nan found\n");
+  if (checkForNan(dell)) throw runtime_error("dell nan found");
   vector<MatrixXd> bigDell = calcBigDell(dell, layersValues);
-  if (checkForNan(bigDell)) throw runtime_error("big dell nan found\n");
+  if (checkForNan(bigDell)) throw runtime_error("big dell nan found");
   decBy = updateDecBy(bigDell, layersValues, lambda, decBy);
-  if (checkForNan(decBy)) throw runtime_error("decBy nan found\n");
+  if (checkForNan(decBy)) throw runtime_error("decBy nan found");
   return decBy;
 }
 
@@ -324,7 +320,11 @@ vector<VectorXd> NeuralNetwork::calcDell(const VectorXd& outputData,
   if (outputData.size() != LayersProps.back()->size())
     throw invalid_argument("wrong outputData size");
   vector<VectorXd> dell;
-  dell.emplace_back(calcOutputErr(outputData, layersValues.back()));
+
+  dell.emplace_back(costFn->calcOutputErr(
+      layersValues.back(), outputData,
+      LayersProps.back()->getActivation()->actFnGrad(layersValues.back())));
+
   for (int j = totalLayers() - 2; j > 0; j--) {
     VectorXd temp =
         (LayersProps[j + 1]->getWeights().transpose() * dell.front());
@@ -354,15 +354,6 @@ vector<MatrixXd> NeuralNetwork::calcBigDell(
     VectorXd tempLayerValues(LayersProps[i]->size() + 1);
     tempLayerValues << 1, layersValues[i];
     bigDell.emplace_back(dell[i + 1] * tempLayerValues.transpose());
-    if (checkForNan(bigDell)) {
-      cout << "big dell nan found\n";
-      cout << "big dell[" << i << "]:\n" << bigDell.back() << "\n\n";
-      cout << "dell[" << i + 1 << "]:\n" << dell[i + 1] << "\n\n";
-      cout << "layersProps[" << i << "] size:\n"
-           << LayersProps[i]->size() << endl;
-      cout << "tempLayerValues[" << i << "]:\n" << tempLayerValues << "\n\n";
-      throw runtime_error("big dell nan found\n");
-    }
   }
   return bigDell;
 }
@@ -412,13 +403,6 @@ vector<MatrixXd> NeuralNetwork::updateWeights(vector<MatrixXd> decBy,
   return decBy;
 }
 
-vector<MatrixXd> NeuralNetwork::getWeights() {
-  vector<MatrixXd> res;
-  for (int i = 1; i < totalLayers(); i++)
-    res.emplace_back(LayersProps[i]->getWeights());
-  return res;
-}
-
 void NeuralNetwork::assertInputAndOutputData(const MatrixXd& inputData,
                                              const MatrixXd& outputData) {
   if (inputData.rows() != outputData.rows())
@@ -429,9 +413,8 @@ void NeuralNetwork::assertInputAndOutputData(const MatrixXd& inputData,
 
 void NeuralNetwork::assertInputData(const MatrixXd& inputData) {
   if (inputData.cols() != LayersProps[0]->size())
-    throw invalid_argument("each input should be of size " +
-                           to_string(LayersProps[0]->size()) + "instead of " +
-                           to_string(inputData.cols()));
+    throw invalid_argument("each input should be of size" +
+                           to_string(LayersProps[0]->size()));
 }
 
 void NeuralNetwork::assertOutputData(const MatrixXd& outputData) {

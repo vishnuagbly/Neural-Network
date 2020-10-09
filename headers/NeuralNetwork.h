@@ -5,16 +5,17 @@
 
 #include <Eigen/Dense>
 
+#include "CostFunction.h"
 #include "Layer.h"
 #include "Optimizer.h"
 void printLayersValues(std::vector<Eigen::VectorXd> layersValues);
 
 class NeuralNetwork {
   std::vector<std::unique_ptr<Layer>> LayersProps;
-  //   std::vector<Eigen::MatrixXd> weights;
   int expectedOutputSize;
-  Eigen::VectorXd (*calcOutputErr)(const Eigen::VectorXd& outputData,
-                                   const Eigen::VectorXd& lastLayer);
+  //   Eigen::VectorXd (*calcOutputErr)(const Eigen::VectorXd& outputData,
+  //                                    const Eigen::VectorXd& lastLayer);
+  std::unique_ptr<CostFunction> costFn;
   std::unique_ptr<Optimizer<Eigen::MatrixXd>> optimizer;
 
   int totalLayers() { return LayersProps.size(); }
@@ -41,9 +42,7 @@ class NeuralNetwork {
   NeuralNetwork(const std::vector<int>& layerSizes,
                 std::vector<Eigen::MatrixXd> weights,
                 int expectedOutputSize = -1,
-                Eigen::VectorXd (*outputErr)(const Eigen::VectorXd& outputData,
-                                             const Eigen::VectorXd& lastLayer) =
-                    calcOutputErrDefaultFn,
+                const CostFunction& costFn = CostFns::CrossEntropy(),
                 const Activation& activation = Activations::Sigmoid(),
                 const Optimizer<Eigen::MatrixXd>& optimizer =
                     Optimizers::SGD<Eigen::MatrixXd>());
@@ -53,7 +52,7 @@ class NeuralNetwork {
                 const Activation& activation,
                 const Optimizer<Eigen::MatrixXd>& optimizer =
                     Optimizers::SGD<Eigen::MatrixXd>())
-      : NeuralNetwork(layerSizes, weights, -1, calcOutputErrDefaultFn,
+      : NeuralNetwork(layerSizes, weights, -1, CostFns::CrossEntropy(),
                       activation, optimizer) {}
 
   NeuralNetwork(const std::vector<int>& layerSizes,
@@ -66,9 +65,13 @@ class NeuralNetwork {
   NeuralNetwork(std::vector<std::unique_ptr<Layer>>& layers,
                 const Optimizer<Eigen::MatrixXd>& optimizer =
                     Optimizers::SGD<Eigen::MatrixXd>(),
-                Eigen::VectorXd (*outputErr)(const Eigen::VectorXd& outputData,
-                                             const Eigen::VectorXd& lastLayer) =
-                    calcOutputErrDefaultFn);
+                const CostFunction& costFn = CostFns::CrossEntropy());
+
+  NeuralNetwork(std::vector<std::unique_ptr<Layer>>& layers,
+                const CostFunction& costFn,
+                const Optimizer<Eigen::MatrixXd>& optimizer =
+                    Optimizers::SGD<Eigen::MatrixXd>())
+      : NeuralNetwork(layers, optimizer, costFn) {}
 
   static Eigen::VectorXd calcOutputErrDefaultFn(
       const Eigen::VectorXd& outputData, const Eigen::VectorXd& lastLayer);
@@ -78,16 +81,14 @@ class NeuralNetwork {
       const double lambda,
       double (*accuracyFn)(const Eigen::VectorXd& outputData,
                            const Eigen::VectorXd& expectedOutput) = getAccuracy,
-      double (*costFn)(const Eigen::VectorXd& outputData,
-                       const Eigen::VectorXd& expectedOutput) = calcCost);
+      const CostFunction& = CostFns::CrossEntropy());
 
   Eigen::MatrixXd allOutputs(const Eigen::MatrixXd& inputData);
 
-  double calcTotalCost(
-      const Eigen::MatrixXd& outputData,
-      const Eigen::MatrixXd& expectedOutputData, const double lambda,
-      double (*costFn)(const Eigen::VectorXd& outputData,
-                       const Eigen::VectorXd& expectedOutput) = calcCost);
+  double calcTotalCost(const Eigen::MatrixXd& outputData,
+                       const Eigen::MatrixXd& expectedOutputData,
+                       const double lambda,
+                       const CostFunction& = CostFns::CrossEntropy());
 
   static double calcCost(const Eigen::VectorXd& outputData,
                          const Eigen::VectorXd& expectedOutput);
@@ -99,8 +100,7 @@ class NeuralNetwork {
       const double lambda, const int batchSize, const int totalRounds,
       const bool printWeightsAndLastChange = false,
       const int costRecordInterval = 1000,
-      double (*costFn)(const Eigen::VectorXd& outputData,
-                       const Eigen::VectorXd& expectedOutput) = calcCost);
+      const CostFunction& costFn = CostFns::CrossEntropy());
 
   std::vector<Eigen::MatrixXd> getDecBy(const Eigen::VectorXd& inputData,
                                         const Eigen::VectorXd& outputData,
@@ -121,8 +121,6 @@ class NeuralNetwork {
                             const Eigen::VectorXd& expectedOutputData);
 
   Eigen::VectorXd getOutput(const Eigen::VectorXd& inputData);
-
-  std::vector<Eigen::MatrixXd> getWeights();
 
   void assertInputAndOutputData(const Eigen::MatrixXd& inputData,
                                 const Eigen::MatrixXd& outputData);

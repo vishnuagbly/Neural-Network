@@ -24,21 +24,21 @@ DenseLayer::DenseLayer(int units, MatrixXd weights,
                        const Activation& activation)
     : Layer(units) {
   this->weights = weights;
-  this->activation = activation.getActivation();
+  this->activation = activation.clone();
 }
 
 DenseLayer::DenseLayer(int units, int inputSize, MatrixXd weights,
                        const Activation& activation)
     : Layer(units) {
-  this->activation = activation.getActivation();
+  this->activation = activation.clone();
   initializeWeights(inputSize, weights);
 }
 
 DenseLayer::DenseLayer(int units, const KernelInitializer& initializer,
                        const Activation& activation)
     : Layer(units) {
-  this->initializer = initializer.getKernelInitializer();
-  this->activation = activation.getActivation();
+  this->initializer = initializer.clone();
+  this->activation = activation.clone();
 }
 
 // basically initialize weights
@@ -77,11 +77,11 @@ Activation* DenseLayer::getActivation() { return this->activation.get(); }
 int DenseLayer::getInputSize() const { return this->inputSize; }
 
 unique_ptr<Activation> DenseLayer::getActivationObj() const {
-  return activation->getActivation();
+  return activation->clone();
 }
 
 unique_ptr<KernelInitializer> DenseLayer::getInitializerObj() const {
-  return initializer->getKernelInitializer();
+  return initializer->clone();
 }
 
 unique_ptr<Layer> DenseLayer::getLayer() const {
