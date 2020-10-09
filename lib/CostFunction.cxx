@@ -11,7 +11,7 @@ double CostFns::CrossEntropy::costFn(const VectorXd& output,
     double temp = costSum;
     costSum += calcSingleCost(output[k], expected[k]);
     if (costSum != costSum) {
-      cout << "coustSum after input row[" << k << "]: " << costSum << endl;
+      cout << "costSum after input row[" << k << "]: " << costSum << endl;
       cout << "returned value: " << calcSingleCost(output[k], expected[k])
            << endl;
       cout << "temp: " << temp << endl;
@@ -20,7 +20,7 @@ double CostFns::CrossEntropy::costFn(const VectorXd& output,
       return costSum;
     }
   }
-  return costSum;
+  return -costSum;
 }
 
 double CostFns::CrossEntropy::calcSingleCost(double output,
@@ -51,13 +51,22 @@ double CostFns::Quadratic::costFn(const VectorXd& output,
                                   const VectorXd& expected) const {
   VectorXd vect = output - expected;
   vect = vect.cwiseProduct(vect) * 0.5;
+  if (vect.any() < 0) throw runtime_error("negative value not possible\n");
   return vect.sum();
 }
 
 VectorXd CostFns::Quadratic::calcOutputErr(
     const VectorXd& output, const VectorXd& expected,
     const VectorXd& actFnGradOutput) const {
-  return (output - expected).cwiseProduct(actFnGradOutput);
+  auto res = (output - expected).cwiseProduct(actFnGradOutput);
+  if (res.any() > 1000) {
+    cout << "output: " << output.transpose() << endl;
+    cout << "expected: " << expected.transpose() << endl;
+    cout << "actFnGradOutput: " << expected.transpose() << endl;
+    cout << "res: " << res.transpose() << endl;
+    throw runtime_error("too large error");
+  }
+  return res;
 }
 
 unique_ptr<CostFunction> CostFns::Quadratic::clone() const {

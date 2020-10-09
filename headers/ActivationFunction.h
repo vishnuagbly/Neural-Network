@@ -35,6 +35,11 @@ class LeakyRelu : public Relu {
  public:
   LeakyRelu(double alpha = 0.01) : Relu(alpha) {}
 };
+
+class Linear : public Relu {
+ public:
+  Linear() : Relu(1) {}
+};
 }  // namespace Activations
 
 #endif

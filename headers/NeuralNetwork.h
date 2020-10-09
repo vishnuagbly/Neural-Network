@@ -102,6 +102,14 @@ class NeuralNetwork {
       const int costRecordInterval = 1000,
       const CostFunction& costFn = CostFns::CrossEntropy());
 
+  std::vector<std::vector<double>> trainNetwork(
+      const Eigen::MatrixXd& inputData, const Eigen::MatrixXd& outputData,
+      const double lambda, const int batchSize, const int totalRounds,
+      const CostFunction& costFn) {
+    return trainNetwork(inputData, outputData, lambda, batchSize, totalRounds,
+                        false, 1000, costFn);
+  }
+
   std::vector<Eigen::MatrixXd> getDecBy(const Eigen::VectorXd& inputData,
                                         const Eigen::VectorXd& outputData,
                                         const double lambda,

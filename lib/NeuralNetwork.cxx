@@ -155,7 +155,6 @@ double NeuralNetwork::calcTotalCost(const MatrixXd& outputData,
     costSum += costFn.costFn(lastLayerValues, expectedOutputData.row(i));
   }
   // cout << endl;
-  costSum *= -1;
   double regularisationTerm = 0;
   for (int i = 1; i < totalLayers(); i++) {
     MatrixXd tempWeights = LayersProps[i]->getWeights();
@@ -167,32 +166,6 @@ double NeuralNetwork::calcTotalCost(const MatrixXd& outputData,
   costSum += (lambda / 2) * regularisationTerm;
   costSum /= outputData.rows();
   return costSum;
-}
-
-double NeuralNetwork::calcCost(const VectorXd& lastLayerValues,
-                               const VectorXd& expectedOutput) {
-  double costSum = 0;
-  for (int k = 0; k < lastLayerValues.size(); k++) {
-    double temp = costSum;
-    costSum += calcSingleCost(expectedOutput[k], lastLayerValues[k]);
-    if (costSum != costSum) {
-      cout << "coustSum after input row[" << k << "]: " << costSum << endl;
-      cout << "returned value: "
-           << calcSingleCost(expectedOutput[k], lastLayerValues[k]) << endl;
-      cout << "temp: " << temp << endl;
-      cout << "output:\n" << expectedOutput << endl;
-      cout << "lastLayerValues:\n" << lastLayerValues << endl;
-      return costSum;
-    }
-  }
-  return costSum;
-}
-
-double NeuralNetwork::calcSingleCost(double expected, double output) {
-  if (expected)
-    return log(output);
-  else
-    return log(1 - output);
 }
 
 VectorXd NeuralNetwork::getOutput(const VectorXd& inputData) {
@@ -234,6 +207,9 @@ vector<vector<double>> NeuralNetwork::trainNetwork(
   int k = 0;
   int itr = 0;
   for (int round = 0; round < totalRounds; round++) {
+    // cout << "weights:\n";
+    // printWeights();
+    // cout << "------------------------------\n";
     for (int i = 0; i < inputData.rows(); i++) {
       decBy.clear();
       for (int j = 0; j < totalLayers() - 1; j++)
@@ -248,6 +224,7 @@ vector<vector<double>> NeuralNetwork::trainNetwork(
         } catch (exception& err) {
           cout << "batchElement: " << batchElement << endl;
           cout << "input row i: " << i << endl;
+          cout << "round: " << round << endl;
           throw;
         }
       }
