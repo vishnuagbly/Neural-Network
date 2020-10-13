@@ -8,9 +8,8 @@ class CostFunction {
   virtual double costFn(const Eigen::VectorXd& output,
                         const Eigen::VectorXd& expected) const = 0;
 
-  virtual Eigen::VectorXd calcOutputErr(
-      const Eigen::VectorXd& output, const Eigen::VectorXd& expected,
-      const Eigen::VectorXd& actFnGradOutput) const = 0;
+  virtual Eigen::VectorXd costFnGrad(const Eigen::VectorXd& output,
+                                     const Eigen::VectorXd& expected) const = 0;
 
   virtual std::unique_ptr<CostFunction> clone() const = 0;
 };
@@ -23,9 +22,8 @@ class CrossEntropy : public CostFunction {
   double costFn(const Eigen::VectorXd& output,
                 const Eigen::VectorXd& expected) const;
 
-  Eigen::VectorXd calcOutputErr(const Eigen::VectorXd& output,
-                                const Eigen::VectorXd& expected,
-                                const Eigen::VectorXd& actFnGradOutput) const;
+  Eigen::VectorXd costFnGrad(const Eigen::VectorXd& output,
+                             const Eigen::VectorXd& expected) const;
 
   std::unique_ptr<CostFunction> clone() const;
 };
@@ -35,9 +33,8 @@ class Quadratic : public CostFunction {
   double costFn(const Eigen::VectorXd& output,
                 const Eigen::VectorXd& expected) const;
 
-  Eigen::VectorXd calcOutputErr(const Eigen::VectorXd& output,
-                                const Eigen::VectorXd& expected,
-                                const Eigen::VectorXd& actFnGradOutput) const;
+  Eigen::VectorXd costFnGrad(const Eigen::VectorXd& output,
+                             const Eigen::VectorXd& expected) const;
 
   std::unique_ptr<CostFunction> clone() const;
 };

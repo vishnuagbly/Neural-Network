@@ -41,3 +41,11 @@ MatrixXd Initializers::GlorotNormal::generate(int lastLayerSize,
 unique_ptr<KernelInitializer> Initializers::GlorotNormal::clone() const {
   return make_unique<Initializers::GlorotNormal>();
 }
+
+MatrixXd Initializers::Zero::generate(int lastLayerSize, int currentLayerSize) {
+  return MatrixXd::Zero(currentLayerSize, lastLayerSize + 1);
+}
+
+unique_ptr<KernelInitializer> Initializers::Zero::clone() const {
+  return make_unique<Initializers::Zero>();
+}

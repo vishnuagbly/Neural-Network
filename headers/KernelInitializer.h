@@ -21,6 +21,12 @@ class GlorotNormal : public KernelInitializer {
   Eigen::MatrixXd generate(int lastLayerSize, int currentLayerSize);
   std::unique_ptr<KernelInitializer> clone() const;
 };
+
+class Zero : public KernelInitializer {
+ public:
+  Eigen::MatrixXd generate(int lastLayerSize, int currentLayerSize);
+  std::unique_ptr<KernelInitializer> clone() const;
+};
 }  // namespace Initializers
 
 #endif

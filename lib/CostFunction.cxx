@@ -31,16 +31,13 @@ double CostFns::CrossEntropy::calcSingleCost(double output,
     return log(1 - output);
 }
 
-VectorXd CostFns::CrossEntropy::calcOutputErr(
-    const VectorXd& output, const VectorXd& expected,
-    const VectorXd& actFnGradOutput) const {
+VectorXd CostFns::CrossEntropy::costFnGrad(const VectorXd& output,
+                                           const VectorXd& expected) const {
   auto denom = output.cwiseProduct(VectorXd::Ones(output.size()) - output);
   auto neum = output - expected;
 
-  if (denom.isApprox(actFnGradOutput)) return neum;
-
   auto grad = neum.cwiseQuotient(denom);
-  return grad.cwiseProduct(actFnGradOutput);
+  return grad;
 }
 
 unique_ptr<CostFunction> CostFns::CrossEntropy::clone() const {
@@ -55,17 +52,9 @@ double CostFns::Quadratic::costFn(const VectorXd& output,
   return vect.sum();
 }
 
-VectorXd CostFns::Quadratic::calcOutputErr(
-    const VectorXd& output, const VectorXd& expected,
-    const VectorXd& actFnGradOutput) const {
-  auto res = (output - expected).cwiseProduct(actFnGradOutput);
-  if (res.any() > 1000) {
-    cout << "output: " << output.transpose() << endl;
-    cout << "expected: " << expected.transpose() << endl;
-    cout << "actFnGradOutput: " << expected.transpose() << endl;
-    cout << "res: " << res.transpose() << endl;
-    throw runtime_error("too large error");
-  }
+VectorXd CostFns::Quadratic::costFnGrad(const VectorXd& output,
+                                        const VectorXd& expected) const {
+  auto res = (output - expected);
   return res;
 }
 

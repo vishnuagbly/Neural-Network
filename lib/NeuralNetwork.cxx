@@ -83,14 +83,14 @@ NeuralNetwork::NeuralNetwork(const vector<int>& layerSizes,
 
   for (int i = 0; i < layerSizes.size(); i++) {
     if (i > 0 && i < layerSizes.size() - 1)
-      this->LayersProps.emplace_back(make_unique<DenseLayer>(
+      this->layersProps.emplace_back(make_unique<DenseLayer>(
           layerSizes[i], layerSizes[i - 1], weights[i - 1], activation));
     else if (i == layerSizes.size() - 1) {
-      this->LayersProps.emplace_back(
+      this->layersProps.emplace_back(
           make_unique<DenseLayer>(layerSizes[i], layerSizes[i - 1],
                                   weights[i - 1], Activations::Sigmoid()));
     } else
-      this->LayersProps.emplace_back(make_unique<InputLayer>(layerSizes[i]));
+      this->layersProps.emplace_back(make_unique<InputLayer>(layerSizes[i]));
   }
   if (expectedOutputSize == -1) this->expectedOutputSize = layerSizes.back();
   this->costFn = costFn.clone();
@@ -106,12 +106,21 @@ NeuralNetwork::NeuralNetwork(vector<unique_ptr<Layer>>& layers,
     throw invalid_argument("first layer should be of inputType not " +
                            layers[0]->getName());
   for (int i = 0; i < layers.size(); i++) {
-    this->LayersProps.emplace_back(move(layers[i]));
-    if (i > 0) LayersProps[i]->initializeWeights(LayersProps[i - 1]->size());
+    this->layersProps.emplace_back(move(layers[i]));
+    if (i > 0) layersProps[i]->initializeWeights(layersProps[i - 1]->size());
   }
   this->optimizer = optimizer.clone();
-  this->expectedOutputSize = LayersProps.back()->size();
+  this->expectedOutputSize = layersProps.back()->size();
   this->costFn = costFn.clone();
+}
+
+NeuralNetwork::NeuralNetwork(const NeuralNetwork& nn) {
+  for (int i = 0; i < nn.layersProps.size(); i++) {
+    this->layersProps.emplace_back(nn.layersProps[i]->clone());
+  }
+  this->expectedOutputSize = nn.expectedOutputSize;
+  this->costFn = nn.costFn->clone();
+  this->optimizer = nn.optimizer->clone();
 }
 
 MatrixXd NeuralNetwork::printResults(
@@ -135,7 +144,7 @@ MatrixXd NeuralNetwork::printResults(
 }
 
 MatrixXd NeuralNetwork::allOutputs(const MatrixXd& inputData) {
-  MatrixXd outputData(inputData.rows(), LayersProps.back()->size());
+  MatrixXd outputData(inputData.rows(), layersProps.back()->size());
   for (int i = 0; i < inputData.rows(); i++) {
     outputData.row(i) = getOutput(inputData.row(i));
   }
@@ -157,7 +166,7 @@ double NeuralNetwork::calcTotalCost(const MatrixXd& outputData,
   // cout << endl;
   double regularisationTerm = 0;
   for (int i = 1; i < totalLayers(); i++) {
-    MatrixXd tempWeights = LayersProps[i]->getWeights();
+    MatrixXd tempWeights = layersProps[i]->getWeights();
     for (int j = 0; j < tempWeights.rows(); j++) {
       for (int k = 0; k < tempWeights.cols(); k++)
         regularisationTerm += tempWeights(j, k) * tempWeights(j, k);
@@ -168,8 +177,11 @@ double NeuralNetwork::calcTotalCost(const MatrixXd& outputData,
   return costSum;
 }
 
-VectorXd NeuralNetwork::getOutput(const VectorXd& inputData) {
-  return calcAllNodes(inputData).back();
+MatrixXd NeuralNetwork::getOutput(const MatrixXd& inputData) {
+  MatrixXd output(inputData.rows(), layersProps.back()->size());
+  for (int i = 0; i < inputData.rows(); i++)
+    output.row(i) = calcAllNodes(inputData.row(i)).back();
+  return output;
 }
 
 double NeuralNetwork::getTotalAccuracy(
@@ -213,8 +225,8 @@ vector<vector<double>> NeuralNetwork::trainNetwork(
     for (int i = 0; i < inputData.rows(); i++) {
       decBy.clear();
       for (int j = 0; j < totalLayers() - 1; j++)
-        decBy.emplace_back(MatrixXd::Zero(LayersProps[j + 1]->size(),
-                                          LayersProps[j]->size() + 1));
+        decBy.emplace_back(MatrixXd::Zero(layersProps[j + 1]->size(),
+                                          layersProps[j]->size() + 1));
 
       int batchElement = 0;
       for (; batchElement < batchSize && i < inputData.rows();
@@ -225,7 +237,7 @@ vector<vector<double>> NeuralNetwork::trainNetwork(
           cout << "batchElement: " << batchElement << endl;
           cout << "input row i: " << i << endl;
           cout << "round: " << round << endl;
-          throw;
+          throw err;
         }
       }
       decBy = updateWeights(decBy, batchElement);
@@ -258,32 +270,28 @@ vector<MatrixXd> NeuralNetwork::getDecBy(const VectorXd& inputData,
 }
 
 vector<VectorXd> NeuralNetwork::calcAllNodes(const VectorXd& inputData) {
-  if (inputData.size() != LayersProps.front()->size())
+  if (inputData.size() != layersProps.front()->size())
     throw invalid_argument("Input of wrong size");
 
   vector<VectorXd> layersValues;
-  vector<VectorXd> zValues;
   layersValues.emplace_back(inputData);
-  zValues.emplace_back(inputData);
   for (int j = 1; j < totalLayers(); j++) {
-    VectorXd layerValues(LayersProps[j]->size());
-    VectorXd tempLastLayerValues(1 + LayersProps[j - 1]->size());
-    tempLastLayerValues << 1, layersValues[j - 1];
-    if (checkForNan(tempLastLayerValues)) {
-      cout << "layer[" << j - 1 << "]:\n" << tempLastLayerValues << endl;
-      throw runtime_error("nan found\n");
-    }
-    zValues.emplace_back(LayersProps[j]->getWeights() * tempLastLayerValues);
-    layerValues << LayersProps[j]->getActivation()->actFn(zValues.back());
+    VectorXd layerValues = layersProps[j]->getOutputValues(layersValues.back());
+
     if (checkForNan(layerValues)) {
-      cout << "tempLastLayer:\n" << tempLastLayerValues << endl;
-      cout << "zValues[" << j << "]:\n" << zValues.back() << endl;
-      cout << "weights[" << j << "]:\n" << LayersProps[j]->getWeights() << endl;
+      cout << "lastLayer:\n" << layersValues.back() << endl;
+      cout << "zValues[" << j << "]:\n"
+           << layersProps[j]->getZValues(layersValues.back()) << endl;
+      cout << "weights[" << j << "]:\n" << layersProps[j]->getWeights() << endl;
       cout << "layer[" << j << "]:\n" << layerValues << endl;
-      cout << "sigmoid: " << Activations::Sigmoid().actFn(zValues.back())
+      cout << "sigmoid: "
+           << Activations::Sigmoid().actFn(
+                  layersProps[j]->getZValues(layersValues.back()))
            << endl;
       cout << "actFn: "
-           << LayersProps[j]->getActivation()->actFn(zValues.back()) << endl;
+           << layersProps[j]->getActivation()->actFn(
+                  layersProps[j]->getZValues(layersValues.back()))
+           << endl;
       throw runtime_error("nan found");
     }
     layersValues.emplace_back(layerValues);
@@ -294,24 +302,24 @@ vector<VectorXd> NeuralNetwork::calcAllNodes(const VectorXd& inputData) {
 
 vector<VectorXd> NeuralNetwork::calcDell(const VectorXd& outputData,
                                          const vector<VectorXd>& layersValues) {
-  if (outputData.size() != LayersProps.back()->size())
+  if (outputData.size() != layersProps.back()->size())
     throw invalid_argument("wrong outputData size");
   vector<VectorXd> dell;
-
-  dell.emplace_back(costFn->calcOutputErr(
-      layersValues.back(), outputData,
-      LayersProps.back()->getActivation()->actFnGrad(layersValues.back())));
+  auto costGrad = costFn->costFnGrad(layersValues.back(), outputData);
+  auto lastLayerGrad =
+      layersProps.back()->getActivation()->actFnGrad(layersValues.back());
+  dell.emplace_back(costGrad.cwiseProduct(lastLayerGrad));
 
   for (int j = totalLayers() - 2; j > 0; j--) {
     VectorXd temp =
-        (LayersProps[j + 1]->getWeights().transpose() * dell.front());
+        (layersProps[j + 1]->getWeights().transpose() * dell.front());
     VectorXd dellLayer =
-        temp.block(1, 0, LayersProps[j]->size(), 1)
+        temp.block(1, 0, layersProps[j]->size(), 1)
             .cwiseProduct(
-                LayersProps[j]->getActivation()->actFnGrad(layersValues[j]));
+                layersProps[j]->getActivation()->actFnGrad(layersValues[j]));
     dell.insert(dell.begin(), dellLayer);
   }
-  dell.insert(dell.begin(), VectorXd::Zero(LayersProps[0]->size()));
+  dell.insert(dell.begin(), VectorXd::Zero(layersProps[0]->size()));
   return dell;
 }
 
@@ -328,7 +336,7 @@ vector<MatrixXd> NeuralNetwork::calcBigDell(
     const vector<VectorXd>& dell, const vector<VectorXd>& layersValues) {
   vector<MatrixXd> bigDell;
   for (int i = 0; i < totalLayers() - 1; i++) {
-    VectorXd tempLayerValues(LayersProps[i]->size() + 1);
+    VectorXd tempLayerValues(layersProps[i]->size() + 1);
     tempLayerValues << 1, layersValues[i];
     bigDell.emplace_back(dell[i + 1] * tempLayerValues.transpose());
   }
@@ -341,10 +349,10 @@ vector<MatrixXd> NeuralNetwork::updateDecBy(
     vector<MatrixXd> decBy) {
   assertLambda(lambda);
   for (int i = 1; i < totalLayers(); i++) {
-    MatrixXd bigDell(LayersProps[i]->size(), LayersProps[i - 1]->size() + 1);
+    MatrixXd bigDell(layersProps[i]->size(), layersProps[i - 1]->size() + 1);
     bigDell = allBigDellValues[i - 1];
-    MatrixXd temp(LayersProps[i]->size(), LayersProps[i - 1]->size() + 1);
-    MatrixXd tempWeights = LayersProps[i]->getWeights();
+    MatrixXd temp(layersProps[i]->size(), layersProps[i - 1]->size() + 1);
+    MatrixXd tempWeights = layersProps[i]->getWeights();
     temp << bigDell.block(0, 0, bigDell.rows(), 1),
         (bigDell.block(0, 1, bigDell.rows(), bigDell.cols() - 1) +
          (lambda *
@@ -357,7 +365,7 @@ vector<MatrixXd> NeuralNetwork::updateDecBy(
 void NeuralNetwork::printWeightsAndUpdates(vector<MatrixXd> decBy) {
   for (int i = 1; i < totalLayers(); i++) {
     cout << "weights[" << i << "]:\n";
-    cout << LayersProps[i]->getWeights() << "\n\n";
+    cout << layersProps[i]->getWeights() << "\n\n";
     cout << "updates[" << i - 1 << "]:\n";
     cout << decBy[i - 1] << "\n\n";
   }
@@ -366,7 +374,7 @@ void NeuralNetwork::printWeightsAndUpdates(vector<MatrixXd> decBy) {
 void NeuralNetwork::printWeights() {
   for (int i = 1; i < totalLayers(); i++) {
     cout << "weights[" << i << "]:\n";
-    cout << LayersProps[i]->getWeights() << "\n\n";
+    cout << layersProps[i]->getWeights() << "\n\n";
   }
 }
 
@@ -374,10 +382,14 @@ vector<MatrixXd> NeuralNetwork::updateWeights(vector<MatrixXd> decBy,
                                               const double totalInputs) {
   for (int i = 1; i < totalLayers(); i++) {
     decBy[i - 1] = decBy[i - 1] / totalInputs;
-    LayersProps[i]->updateWeights(
-        optimizer->applyOptimzer(LayersProps[i]->getWeights(), decBy[i - 1]));
+    layersProps[i]->updateWeights(
+        optimizer->applyOptimzer(layersProps[i]->getWeights(), decBy[i - 1]));
   }
   return decBy;
+}
+
+unique_ptr<NeuralNetwork> NeuralNetwork::clone() {
+  return make_unique<NeuralNetwork>(*this);
 }
 
 void NeuralNetwork::assertInputAndOutputData(const MatrixXd& inputData,
@@ -389,15 +401,15 @@ void NeuralNetwork::assertInputAndOutputData(const MatrixXd& inputData,
 }
 
 void NeuralNetwork::assertInputData(const MatrixXd& inputData) {
-  if (inputData.cols() != LayersProps[0]->size())
+  if (inputData.cols() != layersProps[0]->size())
     throw invalid_argument("each input should be of size" +
-                           to_string(LayersProps[0]->size()));
+                           to_string(layersProps[0]->size()));
 }
 
 void NeuralNetwork::assertOutputData(const MatrixXd& outputData) {
   if (outputData.cols() != expectedOutputSize)
     throw invalid_argument("each output should be of size " +
-                           to_string(LayersProps.back()->size()) + "and not " +
+                           to_string(layersProps.back()->size()) + "and not " +
                            to_string(outputData.cols()));
 }
 

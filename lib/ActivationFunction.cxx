@@ -8,11 +8,13 @@ MatrixXd Sigmoid::actFn(const MatrixXd& matrix) {
   MatrixXd ones = MatrixXd::Ones(matrix.rows(), matrix.cols());
   res << ones + (-matrix).array().exp().matrix();
   res << ones.cwiseQuotient(res);
+  res *= (1 - 1e-16 - 1e-300) * res + 1e-300 * ones;
   return res;
 }
 
 MatrixXd Sigmoid::actFnGrad(const MatrixXd& matrix) {
-  return matrix.cwiseProduct(MatrixXd::Ones(matrix.rows(), matrix.cols()) -
+  return (1 - 1e-16 - 1e-300) *
+         matrix.cwiseProduct(MatrixXd::Ones(matrix.rows(), matrix.cols()) -
                              matrix);
 }
 

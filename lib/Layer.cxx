@@ -70,6 +70,18 @@ void DenseLayer::updateWeights(MatrixXd updatedWeights) {
   this->weights = updatedWeights;
 }
 
+VectorXd DenseLayer::getOutputValues(VectorXd lastLayer) {
+  return activation->actFn(getZValues(lastLayer));
+}
+
+VectorXd DenseLayer::getZValues(VectorXd lastLayer) {
+  if (lastLayer.size() != weights.cols() - 1)
+    throw invalid_argument("can't get z values, last layer is of wrong size\n");
+  VectorXd tempLastLayer(lastLayer.size() + 1);
+  tempLastLayer << 1, lastLayer;
+  return weights * tempLastLayer;
+}
+
 MatrixXd DenseLayer::getWeights() const { return weights; }
 
 Activation* DenseLayer::getActivation() { return this->activation.get(); }
@@ -84,7 +96,7 @@ unique_ptr<KernelInitializer> DenseLayer::getInitializerObj() const {
   return initializer->clone();
 }
 
-unique_ptr<Layer> DenseLayer::getLayer() const {
+unique_ptr<Layer> DenseLayer::clone() const {
   return make_unique<DenseLayer>(this);
 }
 
@@ -108,6 +120,14 @@ void InputLayer::updateWeights(MatrixXd updatedWeights) {
   throw runtime_error("Input Layer doesn't have weights to update");
 }
 
+VectorXd InputLayer::getZValues(VectorXd lastLayer) {
+  throw runtime_error("Input Layer doesn't have Z values");
+}
+
+VectorXd InputLayer::getOutputValues(VectorXd lastLayer) {
+  throw runtime_error("Input Layer doesn't have output values\n");
+}
+
 MatrixXd InputLayer::getWeights() const {
   throw runtime_error("Input Layer doesn't have weights");
 }
@@ -116,6 +136,6 @@ Activation* InputLayer::getActivation() {
   throw runtime_error("Input Layer doesn't have activations");
 }
 
-unique_ptr<Layer> InputLayer::getLayer() const {
+unique_ptr<Layer> InputLayer::clone() const {
   return make_unique<InputLayer>(size());
 }

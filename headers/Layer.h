@@ -16,10 +16,12 @@ class Layer {
   virtual void initializeWeights(int inputSize) = 0;
   virtual void initializeWeights(int inputSize, Eigen::MatrixXd weights) = 0;
   virtual void updateWeights(Eigen::MatrixXd updatedWeights) = 0;
+  virtual Eigen::VectorXd getZValues(Eigen::VectorXd lastLayer) = 0;
+  virtual Eigen::VectorXd getOutputValues(Eigen::VectorXd lastLayer) = 0;
   int size() const;
   virtual Eigen::MatrixXd getWeights() const = 0;
   virtual Activation* getActivation() = 0;
-  virtual std::unique_ptr<Layer> getLayer() const = 0;
+  virtual std::unique_ptr<Layer> clone() const = 0;
 };
 
 namespace Layers {
@@ -52,12 +54,14 @@ class DenseLayer : public Layer {
   void initializeWeights(int inputSize);
   void initializeWeights(int inputSize, Eigen::MatrixXd weights);
   void updateWeights(Eigen::MatrixXd updatedWeights);
+  Eigen::VectorXd getZValues(Eigen::VectorXd lastLayer);
+  Eigen::VectorXd getOutputValues(Eigen::VectorXd lastLayer);
   Eigen::MatrixXd getWeights() const;
   Activation* getActivation();
   int getInputSize() const;
   std::unique_ptr<Activation> getActivationObj() const;
   std::unique_ptr<KernelInitializer> getInitializerObj() const;
-  std::unique_ptr<Layer> getLayer() const;
+  std::unique_ptr<Layer> clone() const;
 };
 
 class InputLayer : public Layer {
@@ -69,9 +73,11 @@ class InputLayer : public Layer {
   void initializeWeights(int inputSize);
   void initializeWeights(int inputSize, Eigen::MatrixXd weights);
   void updateWeights(Eigen::MatrixXd updatedWeights);
+  Eigen::VectorXd getZValues(Eigen::VectorXd lastLayer);
+  Eigen::VectorXd getOutputValues(Eigen::VectorXd getOutputValues);
   Eigen::MatrixXd getWeights() const;
   Activation* getActivation();
-  std::unique_ptr<Layer> getLayer() const;
+  std::unique_ptr<Layer> clone() const;
 };
 }  // namespace Layers
 

@@ -11,14 +11,14 @@
 void printLayersValues(std::vector<Eigen::VectorXd> layersValues);
 
 class NeuralNetwork {
-  std::vector<std::unique_ptr<Layer>> LayersProps;
+  std::vector<std::unique_ptr<Layer>> layersProps;
   int expectedOutputSize;
   //   Eigen::VectorXd (*calcOutputErr)(const Eigen::VectorXd& outputData,
   //                                    const Eigen::VectorXd& lastLayer);
   std::unique_ptr<CostFunction> costFn;
   std::unique_ptr<Optimizer<Eigen::MatrixXd>> optimizer;
 
-  int totalLayers() { return LayersProps.size(); }
+  int totalLayers() { return layersProps.size(); }
 
   std::vector<Eigen::VectorXd> calcAllNodes(const Eigen::VectorXd& inputData);
 
@@ -72,6 +72,8 @@ class NeuralNetwork {
                 const Optimizer<Eigen::MatrixXd>& optimizer =
                     Optimizers::SGD<Eigen::MatrixXd>())
       : NeuralNetwork(layers, optimizer, costFn) {}
+
+  NeuralNetwork(const NeuralNetwork& nn);
 
   static Eigen::VectorXd calcOutputErrDefaultFn(
       const Eigen::VectorXd& outputData, const Eigen::VectorXd& lastLayer);
@@ -128,7 +130,9 @@ class NeuralNetwork {
   static double getAccuracy(const Eigen::VectorXd& outputData,
                             const Eigen::VectorXd& expectedOutputData);
 
-  Eigen::VectorXd getOutput(const Eigen::VectorXd& inputData);
+  Eigen::MatrixXd getOutput(const Eigen::MatrixXd& inputData);
+
+  std::unique_ptr<NeuralNetwork> clone();
 
   void assertInputAndOutputData(const Eigen::MatrixXd& inputData,
                                 const Eigen::MatrixXd& outputData);
