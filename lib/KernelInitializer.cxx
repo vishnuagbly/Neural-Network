@@ -49,3 +49,14 @@ MatrixXd Initializers::Zero::generate(int lastLayerSize, int currentLayerSize) {
 unique_ptr<KernelInitializer> Initializers::Zero::clone() const {
   return make_unique<Initializers::Zero>();
 }
+
+MatrixXd Initializers::Ones::generate(int lastLayerSize, int currentLayerSize) {
+  MatrixXd res(currentLayerSize, lastLayerSize + 1);
+  res << VectorXd::Zero(currentLayerSize),
+      MatrixXd::Ones(currentLayerSize, lastLayerSize);
+  return res;
+}
+
+unique_ptr<KernelInitializer> Initializers::Ones::clone() const {
+  return make_unique<Initializers::Ones>();
+}

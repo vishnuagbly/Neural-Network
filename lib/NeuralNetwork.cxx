@@ -1,7 +1,6 @@
 #include "NeuralNetwork.h"
 using namespace Eigen;
 using namespace std;
-using namespace Layers;
 
 namespace detail {
 template <typename T>  // is_float         is_unsigned
@@ -83,14 +82,14 @@ NeuralNetwork::NeuralNetwork(const vector<int>& layerSizes,
 
   for (int i = 0; i < layerSizes.size(); i++) {
     if (i > 0 && i < layerSizes.size() - 1)
-      this->layersProps.emplace_back(make_unique<DenseLayer>(
+      this->layersProps.emplace_back(make_unique<Layers::Dense>(
           layerSizes[i], layerSizes[i - 1], weights[i - 1], activation));
     else if (i == layerSizes.size() - 1) {
       this->layersProps.emplace_back(
-          make_unique<DenseLayer>(layerSizes[i], layerSizes[i - 1],
-                                  weights[i - 1], Activations::Sigmoid()));
+          make_unique<Layers::Dense>(layerSizes[i], layerSizes[i - 1],
+                                     weights[i - 1], Activations::Sigmoid()));
     } else
-      this->layersProps.emplace_back(make_unique<InputLayer>(layerSizes[i]));
+      this->layersProps.emplace_back(make_unique<Layers::Input>(layerSizes[i]));
   }
   if (expectedOutputSize == -1) this->expectedOutputSize = layerSizes.back();
   this->costFn = costFn.clone();
@@ -102,7 +101,7 @@ NeuralNetwork::NeuralNetwork(vector<unique_ptr<Layer>>& layers,
                              const CostFunction& costFn) {
   if (layers.size() < 2)
     throw invalid_argument("there should atleast be 2 layers");
-  if (layers[0]->getName() != InputLayer::name)
+  if (layers[0]->getName() != Layers::Input::name)
     throw invalid_argument("first layer should be of inputType not " +
                            layers[0]->getName());
   for (int i = 0; i < layers.size(); i++) {
@@ -127,14 +126,13 @@ MatrixXd NeuralNetwork::printResults(
     const MatrixXd& inputData, const MatrixXd& expectedOutput,
     const double lambda,
     double (*accuracyFn)(const VectorXd& outputData,
-                         const VectorXd& expectedOutput),
-    const CostFunction& costFn) {
+                         const VectorXd& expectedOutput)) {
   assertInputAndOutputData(inputData, expectedOutput);
   MatrixXd outputData(expectedOutput.rows(), expectedOutput.cols());
   for (int i = 0; i < expectedOutput.rows(); i++) {
     outputData.row(i) << getOutput(inputData.row(i));
   }
-  auto cost = calcTotalCost(outputData, expectedOutput, lambda, costFn);
+  auto cost = calcTotalCost(outputData, expectedOutput, lambda);
   cout << "total cost: " << cost << endl;
   auto accuracy =
       getTotalAccuracy(inputData, outputData, expectedOutput, accuracyFn);
@@ -153,15 +151,14 @@ MatrixXd NeuralNetwork::allOutputs(const MatrixXd& inputData) {
 
 double NeuralNetwork::calcTotalCost(const MatrixXd& outputData,
                                     const MatrixXd& expectedOutputData,
-                                    const double lambda,
-                                    const CostFunction& costFn) {
+                                    const double lambda) {
   assertOutputData(expectedOutputData);
   double costSum = 0;
   for (int i = 0; i < outputData.rows(); i++) {
     VectorXd lastLayerValues = outputData.row(i);
     // cout << "input[" << i << "]: lasy layer values\n"
     // << lastLayerValues << endl;
-    costSum += costFn.costFn(lastLayerValues, expectedOutputData.row(i));
+    costSum += costFn->costFn(lastLayerValues, expectedOutputData.row(i));
   }
   // cout << endl;
   double regularisationTerm = 0;
@@ -204,8 +201,7 @@ double NeuralNetwork::getAccuracy(const VectorXd& outputData,
 vector<vector<double>> NeuralNetwork::trainNetwork(
     const MatrixXd& inputData, const MatrixXd& outputData, const double lambda,
     const int batchSize, const int totalRounds,
-    const bool printWeightsAndLastChange, int costRecordInterval,
-    const CostFunction& costFn) {
+    const bool printWeightsAndLastChange, int costRecordInterval) {
   assertLambda(lambda);
   assertInputAndOutputData(inputData, outputData);
   if (costRecordInterval <= 0)
@@ -222,8 +218,9 @@ vector<vector<double>> NeuralNetwork::trainNetwork(
     for (int i = 0; i < inputData.rows(); i++) {
       decBy.clear();
       for (int j = 0; j < totalLayers() - 1; j++)
-        decBy.emplace_back(MatrixXd::Zero(layersProps[j + 1]->size(),
-                                          layersProps[j]->size() + 1));
+        decBy.emplace_back(
+            MatrixXd::Zero(layersProps[j + 1]->getWeights().rows(),
+                           layersProps[j + 1]->getWeights().cols()));
 
       int batchElement = 0;
       for (; batchElement < batchSize && i < inputData.rows();
@@ -240,9 +237,8 @@ vector<vector<double>> NeuralNetwork::trainNetwork(
       decBy = updateWeights(decBy, batchElement);
       if (!(itr++ % costRecordInterval) ||
           itr == inputData.rows() * totalRounds - 1) {
-        vector<double> temp = {
-            (double)itr,
-            calcTotalCost(allOutputs(inputData), outputData, lambda, costFn)};
+        vector<double> temp = {(double)itr, calcTotalCost(allOutputs(inputData),
+                                                          outputData, lambda)};
         res.emplace_back(temp);
       }
     }

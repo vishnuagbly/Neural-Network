@@ -75,15 +75,14 @@ class NeuralNetwork {
       const Eigen::MatrixXd& inputData, const Eigen::MatrixXd& expectedOutput,
       const double lambda,
       double (*accuracyFn)(const Eigen::VectorXd& outputData,
-                           const Eigen::VectorXd& expectedOutput) = getAccuracy,
-      const CostFunction& = CostFns::CrossEntropy());
+                           const Eigen::VectorXd& expectedOutput) =
+          getAccuracy);
 
   Eigen::MatrixXd allOutputs(const Eigen::MatrixXd& inputData);
 
   double calcTotalCost(const Eigen::MatrixXd& outputData,
                        const Eigen::MatrixXd& expectedOutputData,
-                       const double lambda,
-                       const CostFunction& = CostFns::CrossEntropy());
+                       const double lambda);
 
   static double calcCost(const Eigen::VectorXd& outputData,
                          const Eigen::VectorXd& expectedOutput);
@@ -93,16 +92,13 @@ class NeuralNetwork {
   std::vector<std::vector<double>> trainNetwork(
       const Eigen::MatrixXd& inputData, const Eigen::MatrixXd& outputData,
       const double lambda, const int batchSize, const int totalRounds,
-      const bool printWeightsAndLastChange = false,
-      const int costRecordInterval = 1000,
-      const CostFunction& costFn = CostFns::CrossEntropy());
+      const bool printWeightsAndLastChange, const int costRecordInterval);
 
   std::vector<std::vector<double>> trainNetwork(
       const Eigen::MatrixXd& inputData, const Eigen::MatrixXd& outputData,
-      const double lambda, const int batchSize, const int totalRounds,
-      const CostFunction& costFn) {
+      const int batchSize, const int totalRounds, const double lambda = 0) {
     return trainNetwork(inputData, outputData, lambda, batchSize, totalRounds,
-                        false, 1000, costFn);
+                        false, 1000);
   }
 
   std::vector<Eigen::MatrixXd> getDecBy(const Eigen::VectorXd& inputData,
