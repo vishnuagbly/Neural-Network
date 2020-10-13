@@ -167,10 +167,7 @@ double NeuralNetwork::calcTotalCost(const MatrixXd& outputData,
   double regularisationTerm = 0;
   for (int i = 1; i < totalLayers(); i++) {
     MatrixXd tempWeights = layersProps[i]->getWeights();
-    for (int j = 0; j < tempWeights.rows(); j++) {
-      for (int k = 0; k < tempWeights.cols(); k++)
-        regularisationTerm += tempWeights(j, k) * tempWeights(j, k);
-    }
+    regularisationTerm += tempWeights.cwiseProduct(tempWeights).sum();
   }
   costSum += (lambda / 2) * regularisationTerm;
   costSum /= outputData.rows();
@@ -262,9 +259,7 @@ vector<MatrixXd> NeuralNetwork::getDecBy(const VectorXd& inputData,
   if (checkForNan(layersValues)) throw runtime_error("layerValues nan found");
   vector<VectorXd> dell = calcDell(outputData, layersValues);
   if (checkForNan(dell)) throw runtime_error("dell nan found");
-  vector<MatrixXd> bigDell = calcBigDell(dell, layersValues);
-  if (checkForNan(bigDell)) throw runtime_error("big dell nan found");
-  decBy = updateDecBy(bigDell, layersValues, lambda, decBy);
+  decBy = calcBigDell(dell, layersValues, lambda, decBy);
   if (checkForNan(decBy)) throw runtime_error("decBy nan found");
   return decBy;
 }
@@ -311,53 +306,22 @@ vector<VectorXd> NeuralNetwork::calcDell(const VectorXd& outputData,
   dell.emplace_back(costGrad.cwiseProduct(lastLayerGrad));
 
   for (int j = totalLayers() - 2; j > 0; j--) {
-    VectorXd temp =
-        (layersProps[j + 1]->getWeights().transpose() * dell.front());
-    VectorXd dellLayer =
-        temp.block(1, 0, layersProps[j]->size(), 1)
-            .cwiseProduct(
-                layersProps[j]->getActivation()->actFnGrad(layersValues[j]));
+    VectorXd temp = layersProps[j + 1]->backPropagateDell(dell.front());
+    VectorXd dellLayer = temp.cwiseProduct(
+        layersProps[j]->getActivation()->actFnGrad(layersValues[j]));
     dell.insert(dell.begin(), dellLayer);
   }
   dell.insert(dell.begin(), VectorXd::Zero(layersProps[0]->size()));
   return dell;
 }
 
-VectorXd NeuralNetwork::calcOutputErrDefaultFn(const VectorXd& expectedOutput,
-                                               const VectorXd& output) {
-  // cout << "expected:\n" << expectedOutput << endl;
-  // cout << "output:\n" << output << endl;
-  auto res = output - expectedOutput;
-  // cout << "res:\n" << res << endl;
-  return res;
-}
-
 vector<MatrixXd> NeuralNetwork::calcBigDell(
-    const vector<VectorXd>& dell, const vector<VectorXd>& layersValues) {
-  vector<MatrixXd> bigDell;
-  for (int i = 0; i < totalLayers() - 1; i++) {
-    VectorXd tempLayerValues(layersProps[i]->size() + 1);
-    tempLayerValues << 1, layersValues[i];
-    bigDell.emplace_back(dell[i + 1] * tempLayerValues.transpose());
-  }
-  return bigDell;
-}
-
-vector<MatrixXd> NeuralNetwork::updateDecBy(
-    const vector<MatrixXd>& allBigDellValues,
-    const vector<VectorXd>& layersValues, const double lambda,
-    vector<MatrixXd> decBy) {
+    const vector<VectorXd>& dell, const vector<VectorXd>& layersValues,
+    const double lambda, vector<MatrixXd> decBy) {
   assertLambda(lambda);
-  for (int i = 1; i < totalLayers(); i++) {
-    MatrixXd bigDell(layersProps[i]->size(), layersProps[i - 1]->size() + 1);
-    bigDell = allBigDellValues[i - 1];
-    MatrixXd temp(layersProps[i]->size(), layersProps[i - 1]->size() + 1);
-    MatrixXd tempWeights = layersProps[i]->getWeights();
-    temp << bigDell.block(0, 0, bigDell.rows(), 1),
-        (bigDell.block(0, 1, bigDell.rows(), bigDell.cols() - 1) +
-         (lambda *
-          tempWeights.block(0, 1, tempWeights.rows(), tempWeights.cols() - 1)));
-    decBy[i - 1] += temp;
+  for (int i = 0; i < totalLayers() - 1; i++) {
+    decBy[i] +=
+        layersProps[i + 1]->calcBigDell(dell[i + 1], layersValues[i], lambda);
   }
   return decBy;
 }

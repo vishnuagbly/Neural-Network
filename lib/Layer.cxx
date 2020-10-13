@@ -70,16 +70,48 @@ void DenseLayer::updateWeights(MatrixXd updatedWeights) {
   this->weights = updatedWeights;
 }
 
-VectorXd DenseLayer::getOutputValues(VectorXd lastLayer) {
+VectorXd DenseLayer::getOutputValues(const VectorXd& lastLayer) {
   return activation->actFn(getZValues(lastLayer));
 }
 
-VectorXd DenseLayer::getZValues(VectorXd lastLayer) {
+VectorXd DenseLayer::getZValues(const VectorXd& lastLayer) {
   if (lastLayer.size() != weights.cols() - 1)
     throw invalid_argument("can't get z values, last layer is of wrong size\n");
   VectorXd tempLastLayer(lastLayer.size() + 1);
   tempLastLayer << 1, lastLayer;
   return weights * tempLastLayer;
+}
+
+VectorXd DenseLayer::backPropagateDell(const VectorXd& thisLayerDell) {
+  if (thisLayerDell.size() != size())
+    throw invalid_argument("this layer dell vector is of wrong size\n");
+  auto dell = weights.transpose() * thisLayerDell;
+  return dell.block(1, 0, dell.size() - 1, 1);
+}
+
+MatrixXd DenseLayer::calcBigDell(const VectorXd& thisLayerDell,
+                                 const VectorXd& lastLayer,
+                                 const double lambda) {
+  if (thisLayerDell.size() != size())
+    throw invalid_argument("this Layer dell vector is of wrong size\n");
+  if (lastLayer.size() != weights.cols() - 1)
+    throw invalid_argument("last layer size is of wrong size\n");
+
+  VectorXd tempLastLayer(weights.cols());
+  tempLastLayer << 1, lastLayer;
+  auto tempBigDell = thisLayerDell * tempLastLayer.transpose();
+  MatrixXd bigDell(weights.rows(), weights.cols());
+  bigDell << getBias(tempBigDell),
+      getKernel(tempBigDell) + (lambda * getKernel(weights));
+  return bigDell;
+}
+
+MatrixXd DenseLayer::getBias(const MatrixXd& matrix) {
+  return matrix.block(0, 0, matrix.rows(), 1);
+}
+
+MatrixXd DenseLayer::getKernel(const MatrixXd& matrix) {
+  return matrix.block(0, 1, matrix.rows(), matrix.cols() - 1);
 }
 
 MatrixXd DenseLayer::getWeights() const { return weights; }
@@ -120,12 +152,22 @@ void InputLayer::updateWeights(MatrixXd updatedWeights) {
   throw runtime_error("Input Layer doesn't have weights to update");
 }
 
-VectorXd InputLayer::getZValues(VectorXd lastLayer) {
+VectorXd InputLayer::getZValues(const VectorXd& lastLayer) {
   throw runtime_error("Input Layer doesn't have Z values");
 }
 
-VectorXd InputLayer::getOutputValues(VectorXd lastLayer) {
+VectorXd InputLayer::getOutputValues(const VectorXd& lastLayer) {
   throw runtime_error("Input Layer doesn't have output values\n");
+}
+
+VectorXd InputLayer::backPropagateDell(const VectorXd& thisLayerDell) {
+  throw runtime_error("Input Layer cannot backpropagate\n");
+}
+
+MatrixXd InputLayer::calcBigDell(const VectorXd& thisLayerDell,
+                                 const VectorXd& lastLayer,
+                                 const double lambda) {
+  throw runtime_error("Input layer cannot calc Big dell values\n");
 }
 
 MatrixXd InputLayer::getWeights() const {

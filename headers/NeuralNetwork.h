@@ -28,10 +28,6 @@ class NeuralNetwork {
 
   std::vector<Eigen::MatrixXd> calcBigDell(
       const std::vector<Eigen::VectorXd>& dell,
-      const std::vector<Eigen::VectorXd>& layersValues);
-
-  std::vector<Eigen::MatrixXd> updateDecBy(
-      const std::vector<Eigen::MatrixXd>& allBigDellValues,
       const std::vector<Eigen::VectorXd>& layersValues, const double lambda,
       std::vector<Eigen::MatrixXd> decBy);
 
@@ -74,9 +70,6 @@ class NeuralNetwork {
       : NeuralNetwork(layers, optimizer, costFn) {}
 
   NeuralNetwork(const NeuralNetwork& nn);
-
-  static Eigen::VectorXd calcOutputErrDefaultFn(
-      const Eigen::VectorXd& outputData, const Eigen::VectorXd& lastLayer);
 
   Eigen::MatrixXd printResults(
       const Eigen::MatrixXd& inputData, const Eigen::MatrixXd& expectedOutput,

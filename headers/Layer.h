@@ -16,8 +16,13 @@ class Layer {
   virtual void initializeWeights(int inputSize) = 0;
   virtual void initializeWeights(int inputSize, Eigen::MatrixXd weights) = 0;
   virtual void updateWeights(Eigen::MatrixXd updatedWeights) = 0;
-  virtual Eigen::VectorXd getZValues(Eigen::VectorXd lastLayer) = 0;
-  virtual Eigen::VectorXd getOutputValues(Eigen::VectorXd lastLayer) = 0;
+  virtual Eigen::VectorXd getZValues(const Eigen::VectorXd& lastLayer) = 0;
+  virtual Eigen::VectorXd getOutputValues(const Eigen::VectorXd& lastLayer) = 0;
+  virtual Eigen::VectorXd backPropagateDell(
+      const Eigen::VectorXd& thisLayerDell) = 0;
+  virtual Eigen::MatrixXd calcBigDell(const Eigen::VectorXd& thisLayerDell,
+                                      const Eigen::VectorXd& lastLayer,
+                                      const double lambda) = 0;
   int size() const;
   virtual Eigen::MatrixXd getWeights() const = 0;
   virtual Activation* getActivation() = 0;
@@ -30,6 +35,9 @@ class DenseLayer : public Layer {
   Eigen::MatrixXd weights;
   std::unique_ptr<KernelInitializer> initializer;
   std::unique_ptr<Activation> activation;
+
+  static Eigen::MatrixXd getKernel(const Eigen::MatrixXd& matrix);
+  static Eigen::MatrixXd getBias(const Eigen::MatrixXd& matrix);
 
  public:
   DenseLayer(const DenseLayer* denseLayer);
@@ -54,8 +62,12 @@ class DenseLayer : public Layer {
   void initializeWeights(int inputSize);
   void initializeWeights(int inputSize, Eigen::MatrixXd weights);
   void updateWeights(Eigen::MatrixXd updatedWeights);
-  Eigen::VectorXd getZValues(Eigen::VectorXd lastLayer);
-  Eigen::VectorXd getOutputValues(Eigen::VectorXd lastLayer);
+  Eigen::VectorXd getZValues(const Eigen::VectorXd& lastLayer);
+  Eigen::VectorXd getOutputValues(const Eigen::VectorXd& lastLayer);
+  Eigen::VectorXd backPropagateDell(const Eigen::VectorXd& thisLayerDell);
+  Eigen::MatrixXd calcBigDell(const Eigen::VectorXd& thisLayerDell,
+                              const Eigen::VectorXd& lastLayer,
+                              const double lambda);
   Eigen::MatrixXd getWeights() const;
   Activation* getActivation();
   int getInputSize() const;
@@ -73,8 +85,12 @@ class InputLayer : public Layer {
   void initializeWeights(int inputSize);
   void initializeWeights(int inputSize, Eigen::MatrixXd weights);
   void updateWeights(Eigen::MatrixXd updatedWeights);
-  Eigen::VectorXd getZValues(Eigen::VectorXd lastLayer);
-  Eigen::VectorXd getOutputValues(Eigen::VectorXd getOutputValues);
+  Eigen::VectorXd getZValues(const Eigen::VectorXd& lastLayer);
+  Eigen::VectorXd getOutputValues(const Eigen::VectorXd& getOutputValues);
+  Eigen::VectorXd backPropagateDell(const Eigen::VectorXd& thisLayerDell);
+  Eigen::MatrixXd calcBigDell(const Eigen::VectorXd& thisLayerDell,
+                              const Eigen::VectorXd& lastLayer,
+                              const double lambda);
   Eigen::MatrixXd getWeights() const;
   Activation* getActivation();
   std::unique_ptr<Layer> clone() const;
