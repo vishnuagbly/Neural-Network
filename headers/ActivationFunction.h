@@ -20,6 +20,13 @@ class Sigmoid : public Activation {
   std::unique_ptr<Activation> clone() const;
 };
 
+class Tanh : public Activation {
+ public:
+  Eigen::MatrixXd actFn(const Eigen::MatrixXd& matrix);
+  Eigen::MatrixXd actFnGrad(const Eigen::MatrixXd& matrix);
+  std::unique_ptr<Activation> clone() const;
+};
+
 class Relu : public Activation {
   const double alpha;
 

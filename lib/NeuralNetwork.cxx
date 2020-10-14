@@ -157,15 +157,17 @@ double NeuralNetwork::calcTotalCost(const MatrixXd& outputData,
   for (int i = 0; i < outputData.rows(); i++) {
     VectorXd lastLayerValues = outputData.row(i);
     // cout << "input[" << i << "]: lasy layer values\n"
-    // << lastLayerValues << endl;
+    //      << lastLayerValues << endl;
     costSum += costFn->costFn(lastLayerValues, expectedOutputData.row(i));
   }
   // cout << endl;
   double regularisationTerm = 0;
   for (int i = 1; i < totalLayers(); i++) {
     MatrixXd tempWeights = layersProps[i]->getWeights();
+    double temp = regularisationTerm;
     regularisationTerm += tempWeights.cwiseProduct(tempWeights).sum();
   }
+  if (regularisationTerm == INFINITY) regularisationTerm = DBL_MAX;
   costSum += (lambda / 2) * regularisationTerm;
   costSum /= outputData.rows();
   return costSum;
@@ -275,10 +277,6 @@ vector<VectorXd> NeuralNetwork::calcAllNodes(const VectorXd& inputData) {
            << layersProps[j]->getZValues(layersValues.back()) << endl;
       cout << "weights[" << j << "]:\n" << layersProps[j]->getWeights() << endl;
       cout << "layer[" << j << "]:\n" << layerValues << endl;
-      cout << "sigmoid: "
-           << Activations::Sigmoid().actFn(
-                  layersProps[j]->getZValues(layersValues.back()))
-           << endl;
       cout << "actFn: "
            << layersProps[j]->getActivation()->actFn(
                   layersProps[j]->getZValues(layersValues.back()))

@@ -49,7 +49,8 @@ double CostFns::Quadratic::costFn(const VectorXd& output,
   VectorXd vect = output - expected;
   vect = vect.cwiseProduct(vect) * 0.5;
   if (vect.any() < 0) throw runtime_error("negative value not possible\n");
-  return vect.sum();
+  double res = vect.sum();
+  return res;
 }
 
 VectorXd CostFns::Quadratic::costFnGrad(const VectorXd& output,
