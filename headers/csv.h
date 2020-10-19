@@ -5,27 +5,23 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
-using namespace std;
 
 namespace csv {
-void putData(fstream& fout, vector<vector<double>> data);
-vector<vector<double>> getData(fstream& fin);
+void putData(std::fstream& fout, std::vector<std::vector<double>> data);
+std::vector<std::vector<double>> getData(std::fstream& fin);
+std::vector<double> getValuesFromCsvLine(std::string temp);
 }  // namespace csv
 
 #ifdef __has_include
 #if __has_include(<Eigen/Dense>)
 #include <Eigen/Dense>
-#ifdef __has_include
-#if __has_include("EigenStlConversions.h")
-#include "EigenStlConversions.h"
 #ifndef CSV_EIGEN_H
 #define CSV_EIGEN_H
 namespace csv {
-void putData(fstream& fout, Eigen::MatrixXd data);
+void putData(std::fstream& fout, Eigen::MatrixXd data);
+Eigen::MatrixXd getMatrixXd(std::fstream& fin);
 }  // namespace csv
 #endif  // CSV_EIGEN_H
-#endif
-#endif  // ifdef EigenStlConversions
 #endif
 #endif  // ifdef Eigen/Dense
 

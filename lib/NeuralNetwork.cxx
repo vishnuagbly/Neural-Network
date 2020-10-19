@@ -57,7 +57,7 @@ NeuralNetwork::NeuralNetwork(const vector<int>& layerSizes,
                              vector<MatrixXd> weights, int expectedOutputSize,
                              const CostFunction& costFn,
                              const Activation& activation,
-                             const Optimizer<MatrixXd>& optimizer) {
+                             const Optimizer& optimizer) {
   if (layerSizes.size() < 2)
     throw invalid_argument("there should be atleast 2 layers");
   if (any_of(layerSizes.begin(), layerSizes.end(),
@@ -97,7 +97,7 @@ NeuralNetwork::NeuralNetwork(const vector<int>& layerSizes,
 }
 
 NeuralNetwork::NeuralNetwork(vector<unique_ptr<Layer>>& layers,
-                             const Optimizer<MatrixXd>& optimizer,
+                             const Optimizer& optimizer,
                              const CostFunction& costFn) {
   if (layers.size() < 2)
     throw invalid_argument("there should atleast be 2 layers");
@@ -111,6 +111,16 @@ NeuralNetwork::NeuralNetwork(vector<unique_ptr<Layer>>& layers,
   this->optimizer = optimizer.clone();
   this->expectedOutputSize = layersProps.back()->size();
   this->costFn = costFn.clone();
+}
+
+NeuralNetwork::NeuralNetwork(vector<unique_ptr<Layer>>& layers, fstream& fin,
+                             const Optimizer& optimizer,
+                             const CostFunction& costFn)
+    : NeuralNetwork(layers, optimizer, costFn) {
+  auto weights = getWeights(fin);
+  for (int i = 1; i < totalLayers(); i++) {
+    layersProps[i]->updateWeights(weights[i - 1]);
+  }
 }
 
 NeuralNetwork::NeuralNetwork(const NeuralNetwork& nn) {
@@ -213,6 +223,7 @@ vector<vector<double>> NeuralNetwork::trainNetwork(
   vector<vector<double>> res;
   int k = 0;
   int itr = 0;
+  optimizer->clone();
   for (int round = 0; round < totalRounds; round++) {
     // cout << "weights:\n";
     // printWeights();
@@ -253,12 +264,29 @@ vector<MatrixXd> NeuralNetwork::getDecBy(const VectorXd& inputData,
                                          const VectorXd& outputData,
                                          const double lambda,
                                          vector<MatrixXd> decBy) {
-  vector<VectorXd> layersValues = calcAllNodes(inputData);
-  if (checkForNan(layersValues)) throw runtime_error("layerValues nan found");
-  vector<VectorXd> dell = calcDell(outputData, layersValues);
-  if (checkForNan(dell)) throw runtime_error("dell nan found");
-  decBy = calcBigDell(dell, layersValues, lambda, decBy);
-  if (checkForNan(decBy)) throw runtime_error("decBy nan found");
+  vector<VectorXd> layersValues;
+  try {
+    layersValues = calcAllNodes(inputData);
+    if (checkForNan(layersValues)) throw runtime_error("layerValues nan found");
+  } catch (exception& err) {
+    cout << "found err in calc All Nodes\n";
+    throw err;
+  }
+  vector<VectorXd> dell;
+  try {
+    dell = calcDell(outputData, layersValues);
+    if (checkForNan(dell)) throw runtime_error("dell nan found");
+  } catch (exception& err) {
+    cout << "found err in calc dell\n";
+    throw err;
+  }
+  try {
+    decBy = calcBigDell(dell, layersValues, lambda, decBy);
+    if (checkForNan(decBy)) throw runtime_error("decBy nan found");
+  } catch (exception& err) {
+    cout << "found err in calcBigDell\n";
+    throw err;
+  }
   return decBy;
 }
 
@@ -299,6 +327,13 @@ vector<VectorXd> NeuralNetwork::calcDell(const VectorXd& outputData,
       layersProps.back()->getActivation()->actFnGrad(layersValues.back());
   dell.emplace_back(costGrad.cwiseProduct(lastLayerGrad));
 
+  if (costGrad.cwiseAbs().maxCoeff() > 150) {
+    cout << "output: " << layersValues.back().transpose() << endl;
+    cout << "expected: " << outputData.transpose() << endl;
+    cout << "dell last layer: " << dell.back().transpose() << endl;
+    throw runtime_error("got dell > 200\n");
+  }
+
   for (int j = totalLayers() - 2; j > 0; j--) {
     VectorXd temp = layersProps[j + 1]->backPropagateDell(dell.front());
     VectorXd dellLayer = temp.cwiseProduct(
@@ -336,13 +371,41 @@ void NeuralNetwork::printWeights() {
   }
 }
 
+void NeuralNetwork::putWeights(fstream& fout) {
+  auto weights = getWeights();
+  for (int i = 0; i < weights.size(); i++) {
+    csv::putData(fout, weights[i]);
+  }
+}
+
+vector<MatrixXd> NeuralNetwork::getWeights() {
+  vector<MatrixXd> res;
+  for (int i = 1; i < totalLayers(); i++)
+    res.emplace_back(layersProps[i]->getWeights());
+  return res;
+}
+
+vector<MatrixXd> NeuralNetwork::getWeights(fstream& fin) {
+  vector<MatrixXd> res;
+  string check;
+  while (fin) {
+    MatrixXd matrix = csv::getMatrixXd(fin);
+    if (!matrix.size()) continue;
+    res.emplace_back(matrix);
+  }
+  return res;
+}
+
 vector<MatrixXd> NeuralNetwork::updateWeights(vector<MatrixXd> decBy,
                                               const double totalInputs) {
+  vector<MatrixXd> weights;
   for (int i = 1; i < totalLayers(); i++) {
     decBy[i - 1] = decBy[i - 1] / totalInputs;
-    layersProps[i]->updateWeights(
-        optimizer->applyOptimzer(layersProps[i]->getWeights(), decBy[i - 1]));
+    weights.emplace_back(layersProps[i]->getWeights());
   }
+  weights = optimizer->applyOptimzer(weights, decBy);
+  for (int i = 1; i < totalLayers(); i++)
+    layersProps[i]->updateWeights(weights[i - 1]);
   return decBy;
 }
 
