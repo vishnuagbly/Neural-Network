@@ -70,7 +70,15 @@ class NeuralNetwork {
                 const Optimizer& optimizer = Optimizers::SGD())
       : NeuralNetwork(layers, optimizer, costFn) {}
 
+  NeuralNetwork(const CostFunction& costFn = CostFns::CrossEntropy(),
+                const Optimizer& optimizer = Optimizers::SGD());
+
+  NeuralNetwork(const Optimizer& optmizer)
+      : NeuralNetwork(CostFns::CrossEntropy(), optmizer) {}
+
   NeuralNetwork(const NeuralNetwork& nn);
+
+  void add(const Layer& layer);
 
   Eigen::MatrixXd printResults(
       const Eigen::MatrixXd& inputData, const Eigen::MatrixXd& expectedOutput,

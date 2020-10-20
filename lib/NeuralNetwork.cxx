@@ -106,7 +106,11 @@ NeuralNetwork::NeuralNetwork(vector<unique_ptr<Layer>>& layers,
                            layers[0]->getName());
   for (int i = 0; i < layers.size(); i++) {
     this->layersProps.emplace_back(move(layers[i]));
-    if (i > 0) layersProps[i]->initializeWeights(layersProps[i - 1]->size());
+    if (i > 0) {
+      if (layersProps[i]->getName() == Layers::Input::name)
+        throw invalid_argument("only first layer can be input layer\n");
+      layersProps[i]->initializeWeights(layersProps[i - 1]->size());
+    }
   }
   this->optimizer = optimizer.clone();
   this->expectedOutputSize = layersProps.back()->size();
@@ -123,6 +127,12 @@ NeuralNetwork::NeuralNetwork(vector<unique_ptr<Layer>>& layers, fstream& fin,
   }
 }
 
+NeuralNetwork::NeuralNetwork(const CostFunction& costFn,
+                             const Optimizer& optimizer) {
+  this->costFn = costFn.clone();
+  this->optimizer = optimizer.clone();
+}
+
 NeuralNetwork::NeuralNetwork(const NeuralNetwork& nn) {
   for (int i = 0; i < nn.layersProps.size(); i++) {
     this->layersProps.emplace_back(nn.layersProps[i]->clone());
@@ -130,6 +140,19 @@ NeuralNetwork::NeuralNetwork(const NeuralNetwork& nn) {
   this->expectedOutputSize = nn.expectedOutputSize;
   this->costFn = nn.costFn->clone();
   this->optimizer = nn.optimizer->clone();
+}
+
+void NeuralNetwork::add(const Layer& layer) {
+  if (!layersProps.size() && layer.getName() != Layers::Input::name)
+    throw invalid_argument("first layer should be an input layer\n");
+  else if (layersProps.size() >= 1 && layer.getName() == Layers::Input::name)
+    throw invalid_argument("only first layer can be an input layer\n");
+  layersProps.emplace_back(layer.clone());
+  if (layersProps.size() > 1) {
+    layersProps.back()->initializeWeights(
+        layersProps[layersProps.size() - 2]->size());
+    this->expectedOutputSize = layersProps.back()->size();
+  }
 }
 
 MatrixXd NeuralNetwork::printResults(
@@ -327,12 +350,12 @@ vector<VectorXd> NeuralNetwork::calcDell(const VectorXd& outputData,
       layersProps.back()->getActivation()->actFnGrad(layersValues.back());
   dell.emplace_back(costGrad.cwiseProduct(lastLayerGrad));
 
-  if (costGrad.cwiseAbs().maxCoeff() > 150) {
-    cout << "output: " << layersValues.back().transpose() << endl;
-    cout << "expected: " << outputData.transpose() << endl;
-    cout << "dell last layer: " << dell.back().transpose() << endl;
-    throw runtime_error("got dell > 200\n");
-  }
+  // if (costGrad.cwiseAbs().maxCoeff() > 150) {
+  //   cout << "output: " << layersValues.back().transpose() << endl;
+  //   cout << "expected: " << outputData.transpose() << endl;
+  //   cout << "dell last layer: " << dell.back().transpose() << endl;
+  //   throw runtime_error("got dell > 200\n");
+  // }
 
   for (int j = totalLayers() - 2; j > 0; j--) {
     VectorXd temp = layersProps[j + 1]->backPropagateDell(dell.front());
@@ -372,6 +395,8 @@ void NeuralNetwork::printWeights() {
 }
 
 void NeuralNetwork::putWeights(fstream& fout) {
+  fout.seekp(0);
+  fout.seekg(0);
   auto weights = getWeights();
   for (int i = 0; i < weights.size(); i++) {
     csv::putData(fout, weights[i]);
@@ -423,8 +448,9 @@ void NeuralNetwork::assertInputAndOutputData(const MatrixXd& inputData,
 
 void NeuralNetwork::assertInputData(const MatrixXd& inputData) {
   if (inputData.cols() != layersProps[0]->size())
-    throw invalid_argument("each input should be of size" +
-                           to_string(layersProps[0]->size()));
+    throw invalid_argument("each input should be of size " +
+                           to_string(layersProps[0]->size()) + " not of size " +
+                           to_string(inputData.cols()));
 }
 
 void NeuralNetwork::assertOutputData(const MatrixXd& outputData) {
