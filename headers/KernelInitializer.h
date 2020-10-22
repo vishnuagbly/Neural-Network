@@ -7,6 +7,7 @@ class KernelInitializer {
  public:
   virtual Eigen::MatrixXd generate(int lastLayerSize, int currentLayerSize) = 0;
   virtual std::unique_ptr<KernelInitializer> clone() const = 0;
+  static int seed;
 };
 
 namespace Initializers {

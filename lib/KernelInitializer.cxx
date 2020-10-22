@@ -7,9 +7,11 @@
 using namespace std;
 using namespace Eigen;
 
+int KernelInitializer::seed = time(0);
+
 MatrixXd Initializers::HeNormal::generate(int lastLayerSize,
                                           int currentLayerSize) {
-  static default_random_engine eng(time(0));
+  static default_random_engine eng(seed);
   MatrixXd matrix(currentLayerSize, lastLayerSize + 1);
   matrix << VectorXd::Zero(currentLayerSize),
       MatrixXd::Zero(currentLayerSize, lastLayerSize)
@@ -26,7 +28,7 @@ unique_ptr<KernelInitializer> Initializers::HeNormal::clone() const {
 
 MatrixXd Initializers::GlorotNormal::generate(int lastLayerSize,
                                               int currentLayerSize) {
-  static default_random_engine eng(time(0));
+  static default_random_engine eng(seed);
   MatrixXd matrix(currentLayerSize, lastLayerSize + 1);
   matrix << VectorXd::Zero(currentLayerSize),
       MatrixXd::Zero(currentLayerSize, lastLayerSize)

@@ -23,39 +23,34 @@ class SGD : public Optimizer {
   std::vector<Eigen::MatrixXd> velocity;
 
  public:
-  SGD(double learningRate = 0.01, double momentum = 0.0) {
-    if (momentum < 0 || momentum >= 1)
-      throw std::invalid_argument(
-          "momentum values must belong to [0, 1) range\n");
-    this->learningRate = learningRate;
-    this->momentum = momentum;
-  }
+  SGD(double learningRate = 0.01, double momentum = 0.0);
 
-  SGD(const SGD& obj) {
-    this->learningRate = obj.learningRate;
-    this->momentum = obj.momentum;
-    this->velocity = obj.velocity;
-  }
+  SGD(const SGD& obj);
 
   std::vector<Eigen::MatrixXd> applyOptimzer(
-      std::vector<Eigen::MatrixXd> values, std::vector<Eigen::MatrixXd> grads) {
-    if (values.size() != grads.size())
-      throw std::invalid_argument("values and grads of different size\n");
-    bool firstTime = (velocity.size() != grads.size());
-    for (int i = 0; i < values.size(); i++) {
-      if (firstTime)
-        velocity.emplace_back(
-            Eigen::MatrixXd::Zero(grads[i].rows(), grads[i].cols()));
-      velocity[i] = (momentum * velocity[i]) + ((1 - momentum) * (grads[i]));
-      values[i] = values[i] - (learningRate * velocity[i]);
-    }
-    return values;
-  }
+      std::vector<Eigen::MatrixXd> values, std::vector<Eigen::MatrixXd> grads);
 
-  void clear() { velocity.clear(); }
-  std::unique_ptr<Optimizer> clone() const {
-    return std::make_unique<SGD>(*this);
-  }
+  void clear();
+  std::unique_ptr<Optimizer> clone() const;
+};
+
+class Adam : public Optimizer {
+  double alpha;
+  double beta1;
+  double beta2;
+  double epsilon = 1e-8;
+  std::vector<Eigen::MatrixXd> moment1, moment2;
+
+ public:
+  Adam(double alpha = 0.001, double beta1 = 0.9, double beta2 = 0.999);
+
+  Adam(const Adam& obj);
+
+  std::vector<Eigen::MatrixXd> applyOptimzer(
+      std::vector<Eigen::MatrixXd> values, std::vector<Eigen::MatrixXd> grads);
+
+  void clear();
+  std::unique_ptr<Optimizer> clone() const;
 };
 }  // namespace Optimizers
 
