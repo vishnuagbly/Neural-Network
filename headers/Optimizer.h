@@ -7,6 +7,7 @@
 
 class Optimizer {
  public:
+  virtual ~Optimizer() {}
   virtual std::vector<Eigen::MatrixXd> applyOptimzer(
       std::vector<Eigen::MatrixXd> values,
       std::vector<Eigen::MatrixXd> grads) = 0;

@@ -5,6 +5,7 @@
 
 class CostFunction {
  public:
+  virtual ~CostFunction() {}
   virtual double costFn(const Eigen::VectorXd& output,
                         const Eigen::VectorXd& expected) const = 0;
 

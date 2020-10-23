@@ -7,6 +7,7 @@
 
 class Activation {
  public:
+  virtual ~Activation() {}
   virtual Eigen::MatrixXd actFn(const Eigen::MatrixXd& matrix) = 0;
   virtual Eigen::MatrixXd actFnGrad(const Eigen::MatrixXd& matrix) = 0;
   virtual std::unique_ptr<Activation> clone() const = 0;
@@ -32,6 +33,7 @@ class Relu : public Activation {
 
  public:
   Relu(double alpha = 0);
+  virtual ~Relu() {}
   Eigen::MatrixXd actFn(const Eigen::MatrixXd& matrix);
   Eigen::MatrixXd actFnGrad(const Eigen::MatrixXd& matrix);
   double getAlpha();

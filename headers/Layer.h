@@ -14,6 +14,7 @@ class Layer {
 
  public:
   Layer(int units);
+  virtual ~Layer() {}
   virtual std::string getName() const = 0;
   virtual void setInputSize(int inputSize) = 0;
   virtual void initializeWeights(int inputSize) = 0;
@@ -113,6 +114,7 @@ class Linear : public Layer {
       : Linear(activation, Initializers::Ones()) {}
   Linear(const KernelInitializer& initializer)
       : Linear(Activations::Linear(), initializer) {}
+  virtual ~Linear() {}
   void setInputSize(int inputSize);
   void initializeWeights(int inputSize);
   void initializeWeights(int inputSize, const Eigen::MatrixXd& weights);
