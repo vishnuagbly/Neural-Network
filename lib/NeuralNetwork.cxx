@@ -159,7 +159,7 @@ MatrixXd NeuralNetwork::printResults(
     const MatrixXd& inputData, const MatrixXd& expectedOutput,
     const double lambda,
     double (*accuracyFn)(const VectorXd& outputData,
-                         const VectorXd& expectedOutput)) {
+                         const VectorXd& expectedOutput)) const {
   assertInputAndOutputData(inputData, expectedOutput);
   MatrixXd outputData(expectedOutput.rows(), expectedOutput.cols());
   for (int i = 0; i < expectedOutput.rows(); i++) {
@@ -174,7 +174,7 @@ MatrixXd NeuralNetwork::printResults(
   return outputData;
 }
 
-MatrixXd NeuralNetwork::allOutputs(const MatrixXd& inputData) {
+MatrixXd NeuralNetwork::allOutputs(const MatrixXd& inputData) const {
   MatrixXd outputData(inputData.rows(), layersProps.back()->size());
   for (int i = 0; i < inputData.rows(); i++) {
     outputData.row(i) = getOutput(inputData.row(i));
@@ -184,7 +184,7 @@ MatrixXd NeuralNetwork::allOutputs(const MatrixXd& inputData) {
 
 double NeuralNetwork::calcTotalCost(const MatrixXd& outputData,
                                     const MatrixXd& expectedOutputData,
-                                    const double lambda) {
+                                    const double lambda) const {
   assertOutputData(expectedOutputData);
   double costSum = 0;
   for (int i = 0; i < outputData.rows(); i++) {
@@ -206,7 +206,7 @@ double NeuralNetwork::calcTotalCost(const MatrixXd& outputData,
   return costSum;
 }
 
-MatrixXd NeuralNetwork::getOutput(const MatrixXd& inputData) {
+MatrixXd NeuralNetwork::getOutput(const MatrixXd& inputData) const {
   MatrixXd output(inputData.rows(), layersProps.back()->size());
   for (int i = 0; i < inputData.rows(); i++)
     output.row(i) = calcAllNodes(inputData.row(i)).back();
@@ -286,7 +286,7 @@ vector<vector<double>> NeuralNetwork::trainNetwork(
 vector<MatrixXd> NeuralNetwork::getDecBy(const VectorXd& inputData,
                                          const VectorXd& outputData,
                                          const double lambda,
-                                         vector<MatrixXd> decBy) {
+                                         vector<MatrixXd> decBy) const {
   vector<VectorXd> layersValues;
   try {
     layersValues = calcAllNodes(inputData);
@@ -313,7 +313,7 @@ vector<MatrixXd> NeuralNetwork::getDecBy(const VectorXd& inputData,
   return decBy;
 }
 
-vector<VectorXd> NeuralNetwork::calcAllNodes(const VectorXd& inputData) {
+vector<VectorXd> NeuralNetwork::calcAllNodes(const VectorXd& inputData) const {
   if (inputData.size() != layersProps.front()->size())
     throw invalid_argument("Input of wrong size");
 
@@ -340,8 +340,8 @@ vector<VectorXd> NeuralNetwork::calcAllNodes(const VectorXd& inputData) {
   return layersValues;
 }
 
-vector<VectorXd> NeuralNetwork::calcDell(const VectorXd& outputData,
-                                         const vector<VectorXd>& layersValues) {
+vector<VectorXd> NeuralNetwork::calcDell(
+    const VectorXd& outputData, const vector<VectorXd>& layersValues) const {
   if (outputData.size() != layersProps.back()->size())
     throw invalid_argument("wrong outputData size");
   vector<VectorXd> dell;
@@ -369,7 +369,7 @@ vector<VectorXd> NeuralNetwork::calcDell(const VectorXd& outputData,
 
 vector<MatrixXd> NeuralNetwork::calcBigDell(
     const vector<VectorXd>& dell, const vector<VectorXd>& layersValues,
-    const double lambda, vector<MatrixXd> decBy) {
+    const double lambda, vector<MatrixXd> decBy) const {
   assertLambda(lambda);
   for (int i = 0; i < totalLayers() - 1; i++) {
     decBy[i] +=
@@ -378,7 +378,7 @@ vector<MatrixXd> NeuralNetwork::calcBigDell(
   return decBy;
 }
 
-void NeuralNetwork::printWeightsAndUpdates(vector<MatrixXd> decBy) {
+void NeuralNetwork::printWeightsAndUpdates(vector<MatrixXd> decBy) const {
   for (int i = 1; i < totalLayers(); i++) {
     cout << "weights[" << i << "]:\n";
     cout << layersProps[i]->getWeights() << "\n\n";
@@ -387,7 +387,7 @@ void NeuralNetwork::printWeightsAndUpdates(vector<MatrixXd> decBy) {
   }
 }
 
-void NeuralNetwork::printWeights() {
+void NeuralNetwork::printWeights() const {
   for (int i = 1; i < totalLayers(); i++) {
     cout << "weights[" << i << "]:\n";
     cout << layersProps[i]->getWeights() << "\n\n";
@@ -434,33 +434,33 @@ vector<MatrixXd> NeuralNetwork::updateWeights(vector<MatrixXd> decBy,
   return decBy;
 }
 
-unique_ptr<NeuralNetwork> NeuralNetwork::clone() {
+unique_ptr<NeuralNetwork> NeuralNetwork::clone() const {
   return make_unique<NeuralNetwork>(*this);
 }
 
 void NeuralNetwork::assertInputAndOutputData(const MatrixXd& inputData,
-                                             const MatrixXd& outputData) {
+                                             const MatrixXd& outputData) const {
   if (inputData.rows() != outputData.rows())
     throw invalid_argument("inputData and outputData not of equal sizes");
   assertInputData(inputData);
   assertOutputData(outputData);
 }
 
-void NeuralNetwork::assertInputData(const MatrixXd& inputData) {
+void NeuralNetwork::assertInputData(const MatrixXd& inputData) const {
   if (inputData.cols() != layersProps[0]->size())
     throw invalid_argument("each input should be of size " +
                            to_string(layersProps[0]->size()) + " not of size " +
                            to_string(inputData.cols()));
 }
 
-void NeuralNetwork::assertOutputData(const MatrixXd& outputData) {
+void NeuralNetwork::assertOutputData(const MatrixXd& outputData) const {
   if (outputData.cols() != expectedOutputSize)
     throw invalid_argument("each output should be of size " +
                            to_string(layersProps.back()->size()) + "and not " +
                            to_string(outputData.cols()));
 }
 
-void NeuralNetwork::assertLambda(const double lambda) {
+void NeuralNetwork::assertLambda(const double lambda) const {
   if (lambda < 0) throw invalid_argument("lambda cannot be less than zero");
 }
 

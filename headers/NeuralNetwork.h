@@ -20,18 +20,19 @@ class NeuralNetwork {
   std::unique_ptr<CostFunction> costFn;
   std::unique_ptr<Optimizer> optimizer;
 
-  int totalLayers() { return layersProps.size(); }
+  int totalLayers() const { return layersProps.size(); }
 
-  std::vector<Eigen::VectorXd> calcAllNodes(const Eigen::VectorXd& inputData);
+  std::vector<Eigen::VectorXd> calcAllNodes(
+      const Eigen::VectorXd& inputData) const;
 
   std::vector<Eigen::VectorXd> calcDell(
       const Eigen::VectorXd& outputData,
-      const std::vector<Eigen::VectorXd>& layersValues);
+      const std::vector<Eigen::VectorXd>& layersValues) const;
 
   std::vector<Eigen::MatrixXd> calcBigDell(
       const std::vector<Eigen::VectorXd>& dell,
       const std::vector<Eigen::VectorXd>& layersValues, const double lambda,
-      std::vector<Eigen::MatrixXd> decBy);
+      std::vector<Eigen::MatrixXd> decBy) const;
 
   std::vector<Eigen::MatrixXd> updateWeights(std::vector<Eigen::MatrixXd> decBy,
                                              const double totalInputs);
@@ -85,13 +86,13 @@ class NeuralNetwork {
       const double lambda,
       double (*accuracyFn)(const Eigen::VectorXd& outputData,
                            const Eigen::VectorXd& expectedOutput) =
-          getAccuracy);
+          getAccuracy) const;
 
-  Eigen::MatrixXd allOutputs(const Eigen::MatrixXd& inputData);
+  Eigen::MatrixXd allOutputs(const Eigen::MatrixXd& inputData) const;
 
   double calcTotalCost(const Eigen::MatrixXd& outputData,
                        const Eigen::MatrixXd& expectedOutputData,
-                       const double lambda);
+                       const double lambda) const;
 
   static double calcCost(const Eigen::VectorXd& outputData,
                          const Eigen::VectorXd& expectedOutput);
@@ -110,14 +111,13 @@ class NeuralNetwork {
                         false, 1000);
   }
 
-  std::vector<Eigen::MatrixXd> getDecBy(const Eigen::VectorXd& inputData,
-                                        const Eigen::VectorXd& outputData,
-                                        const double lambda,
-                                        std::vector<Eigen::MatrixXd> decBy);
+  std::vector<Eigen::MatrixXd> getDecBy(
+      const Eigen::VectorXd& inputData, const Eigen::VectorXd& outputData,
+      const double lambda, std::vector<Eigen::MatrixXd> decBy) const;
 
-  void printWeightsAndUpdates(std::vector<Eigen::MatrixXd> decBy);
+  void printWeightsAndUpdates(std::vector<Eigen::MatrixXd> decBy) const;
 
-  void printWeights();
+  void printWeights() const;
 
   static double getTotalAccuracy(
       const Eigen::MatrixXd& inputData, const Eigen::MatrixXd& outputData,
@@ -128,9 +128,9 @@ class NeuralNetwork {
   static double getAccuracy(const Eigen::VectorXd& outputData,
                             const Eigen::VectorXd& expectedOutputData);
 
-  Eigen::MatrixXd getOutput(const Eigen::MatrixXd& inputData);
+  Eigen::MatrixXd getOutput(const Eigen::MatrixXd& inputData) const;
 
-  std::unique_ptr<NeuralNetwork> clone();
+  std::unique_ptr<NeuralNetwork> clone() const;
 
   void putWeights(std::fstream& fout);
 
@@ -139,13 +139,13 @@ class NeuralNetwork {
   std::vector<Eigen::MatrixXd> getWeights(std::fstream& fin);
 
   void assertInputAndOutputData(const Eigen::MatrixXd& inputData,
-                                const Eigen::MatrixXd& outputData);
+                                const Eigen::MatrixXd& outputData) const;
 
-  void assertInputData(const Eigen::MatrixXd& inputData);
+  void assertInputData(const Eigen::MatrixXd& inputData) const;
 
-  void assertOutputData(const Eigen::MatrixXd& outputData);
+  void assertOutputData(const Eigen::MatrixXd& outputData) const;
 
-  void assertLambda(const double lambda);
+  void assertLambda(const double lambda) const;
 };
 
 #endif
