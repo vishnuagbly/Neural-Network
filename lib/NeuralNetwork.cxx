@@ -121,10 +121,7 @@ NeuralNetwork::NeuralNetwork(vector<unique_ptr<Layer>>& layers, fstream& fin,
                              const Optimizer& optimizer,
                              const CostFunction& costFn)
     : NeuralNetwork(layers, optimizer, costFn) {
-  auto weights = getWeights(fin);
-  for (int i = 1; i < totalLayers(); i++) {
-    layersProps[i]->updateWeights(weights[i - 1]);
-  }
+  uploadWeights(fin);
 }
 
 NeuralNetwork::NeuralNetwork(const CostFunction& costFn,
@@ -152,6 +149,15 @@ void NeuralNetwork::add(const Layer& layer) {
     layersProps.back()->initializeWeights(
         layersProps[layersProps.size() - 2]->size());
     this->expectedOutputSize = layersProps.back()->size();
+  }
+}
+
+void NeuralNetwork::uploadWeights(fstream& fin) {
+  auto weights = getWeights(fin);
+  if (weights.size() != layersProps.size() - 1)
+    throw invalid_argument("weights not of correct size\n");
+  for (int i = 1; i < totalLayers(); i++) {
+    layersProps[i]->updateWeights(weights[i - 1]);
   }
 }
 

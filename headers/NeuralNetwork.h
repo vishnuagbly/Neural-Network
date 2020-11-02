@@ -74,12 +74,17 @@ class NeuralNetwork {
   NeuralNetwork(const CostFunction& costFn = CostFns::CrossEntropy(),
                 const Optimizer& optimizer = Optimizers::SGD());
 
-  NeuralNetwork(const Optimizer& optmizer)
-      : NeuralNetwork(CostFns::CrossEntropy(), optmizer) {}
+  NeuralNetwork(const Optimizer& optmizer,
+                const CostFunction& costFn = CostFns::CrossEntropy())
+      : NeuralNetwork(costFn, optmizer) {}
 
   NeuralNetwork(const NeuralNetwork& nn);
 
+  // add layer
   void add(const Layer& layer);
+
+  // upload weights from csv file.
+  void uploadWeights(std::fstream& fin);
 
   Eigen::MatrixXd printResults(
       const Eigen::MatrixXd& inputData, const Eigen::MatrixXd& expectedOutput,

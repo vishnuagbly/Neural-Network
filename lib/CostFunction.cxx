@@ -17,7 +17,7 @@ double CostFns::CrossEntropy::costFn(const VectorXd& output,
       cout << "temp: " << temp << endl;
       cout << "expected:\n" << expected << endl;
       cout << "output:\n" << output << endl;
-      return costSum;
+      throw runtime_error("nan found\n");
     }
   }
   return -costSum;
