@@ -1,4 +1,5 @@
 #include "NeuralNetwork.h"
+
 using namespace Eigen;
 using namespace std;
 
@@ -239,7 +240,7 @@ double NeuralNetwork::getAccuracy(const VectorXd& outputData,
   return i1 == i2;
 }
 
-vector<vector<double>> NeuralNetwork::trainNetwork(
+vector<vector<double>> NeuralNetwork::train(
     const MatrixXd& inputData, const MatrixXd& outputData, const double lambda,
     const int batchSize, const int totalRounds,
     const bool printWeightsAndLastChange, int costRecordInterval) {
@@ -407,6 +408,7 @@ void NeuralNetwork::putWeights(fstream& fout) {
   for (int i = 0; i < weights.size(); i++) {
     csv::putData(fout, weights[i]);
   }
+  while (!fout.eof()) fout << "";
 }
 
 vector<MatrixXd> NeuralNetwork::getWeights() {

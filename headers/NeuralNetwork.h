@@ -88,7 +88,7 @@ class NeuralNetwork {
 
   Eigen::MatrixXd printResults(
       const Eigen::MatrixXd& inputData, const Eigen::MatrixXd& expectedOutput,
-      const double lambda,
+      const double lambda = 0,
       double (*accuracyFn)(const Eigen::VectorXd& outputData,
                            const Eigen::VectorXd& expectedOutput) =
           getAccuracy) const;
@@ -104,16 +104,18 @@ class NeuralNetwork {
 
   static double calcSingleCost(double expected, double output);
 
-  std::vector<std::vector<double>> trainNetwork(
+  std::vector<std::vector<double>> train(
       const Eigen::MatrixXd& inputData, const Eigen::MatrixXd& outputData,
       const double lambda, const int batchSize, const int totalRounds,
       const bool printWeightsAndLastChange, const int costRecordInterval);
 
-  std::vector<std::vector<double>> trainNetwork(
-      const Eigen::MatrixXd& inputData, const Eigen::MatrixXd& outputData,
-      const int batchSize, const int totalRounds, const double lambda = 0) {
-    return trainNetwork(inputData, outputData, lambda, batchSize, totalRounds,
-                        false, 1000);
+  std::vector<std::vector<double>> train(const Eigen::MatrixXd& inputData,
+                                         const Eigen::MatrixXd& outputData,
+                                         const int batchSize,
+                                         const int totalRounds,
+                                         const double lambda = 0) {
+    return train(inputData, outputData, lambda, batchSize, totalRounds, false,
+                 1000);
   }
 
   std::vector<Eigen::MatrixXd> getDecBy(
