@@ -1,9 +1,12 @@
 #ifndef ACTIVATION_FUNCTION_H
 #define ACTIVATION_FUNCTION_H
 
-#include <bits/stdc++.h>
-
 #include <Eigen/Dense>
+#include <cfloat>
+#include <cmath>
+#include <iostream>
+#include <memory>
+#include <vector>
 
 class Activation {
  public:
