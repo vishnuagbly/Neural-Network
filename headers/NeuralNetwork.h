@@ -1,10 +1,11 @@
 #ifndef NEURAL_NETWORK_H
 #define NEURAL_NETWORK_H
 #pragma once
-#include <bits/stdc++.h>
-
 #include <Eigen/Dense>
 #include <fstream>
+#include <iostream>
+#include <memory>
+#include <vector>
 
 #include "CostFunction.h"
 #include "Layer.h"

@@ -1,8 +1,8 @@
 #ifndef EIGENSTLCONVERSIONS_H
 #define EIGENSTLCONVERSIONS_H
-#include <bits/stdc++.h>
-
 #include <Eigen/Dense>
+#include <iostream>
+#include <vector>
 using namespace Eigen;
 using namespace std;
 
