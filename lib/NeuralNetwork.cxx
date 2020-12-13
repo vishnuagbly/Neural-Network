@@ -30,6 +30,17 @@ VectorXd operator-(const double scalar, const VectorXd& vect) {
   return vect - (scalar * VectorXd::Ones(vect.size()));
 }
 
+vector<MatrixXd> operator+(const vector<MatrixXd>& first,
+                           const vector<MatrixXd>& second) {
+  if (first.size() != second.size())
+    throw invalid_argument(
+        "first and second does not contain eq amount of matrices\n");
+
+  vector<MatrixXd> res;
+  for (int i = 0; i < first.size(); i++) res.emplace_back(first[i] + second[i]);
+  return res;
+}
+
 void print(vector<double> arr) {
   for (double value : arr) cout << value << " ";
   cout << endl;
@@ -265,18 +276,36 @@ vector<vector<double>> NeuralNetwork::train(
             MatrixXd::Zero(layersProps[j + 1]->getWeights().rows(),
                            layersProps[j + 1]->getWeights().cols()));
 
+      vector<future<vector<MatrixXd, allocator<MatrixXd>>>> threads(
+          max(thread::hardware_concurrency() - 2, (unsigned)0));
+
       int batchElement = 0;
-      for (; batchElement < batchSize && i < inputData.rows();
-           batchElement++, i++) {
-        try {
-          decBy = getDecBy(inputData.row(i), outputData.row(i), lambda, decBy);
-        } catch (exception& err) {
-          cout << "batchElement: " << batchElement << endl;
-          cout << "input row i: " << i << endl;
-          cout << "round: " << round << endl;
-          throw err;
-        }
+      for (int th = 0; th < threads.size(); th++) {
+        threads[th] =
+            async(isolateTraining, *this, ref(inputData), ref(outputData),
+                  lambda, round, batchSize, th, threads.size() + 1, i);
       }
+      isolateTraining(inputData, outputData, lambda, round, batchSize,
+                      threads.size(), threads.size() + 1, i);
+      for (int th = 0; th < threads.size(); th++)
+        decBy = decBy + threads[th].get();
+
+      int incrementBy = min(batchSize, (int)inputData.rows() - i);
+      batchElement += incrementBy;
+      i += incrementBy;
+
+      // for (; batchElement < batchSize && i < inputData.rows();
+      //      batchElement++, i++) {
+      //   try {
+      //     decBy = getDecBy(inputData.row(i), outputData.row(i), lambda,
+      //     decBy);
+      //   } catch (exception& err) {
+      //     cout << "batchElement: " << batchElement << endl;
+      //     cout << "input row i: " << i << endl;
+      //     cout << "round: " << round << endl;
+      //     throw err;
+      //   }
+      // }
       decBy = updateWeights(decBy, batchElement);
       if (!(itr++ % costRecordInterval) ||
           itr == inputData.rows() * totalRounds - 1) {
@@ -288,6 +317,33 @@ vector<vector<double>> NeuralNetwork::train(
   }
   if (printWeightsAndLastChange) printWeightsAndUpdates(decBy);
   return res;
+}
+
+vector<MatrixXd> NeuralNetwork::isolateTraining(const MatrixXd& inputData,
+                                                const MatrixXd& outputData,
+                                                int lambda, int round,
+                                                int batchSize, int index,
+                                                int totalThreads,
+                                                int currentRow) const {
+  vector<MatrixXd> decBy;
+  for (int j = 0; j < totalLayers() - 1; j++)
+    decBy.emplace_back(MatrixXd::Zero(layersProps[j + 1]->getWeights().rows(),
+                                      layersProps[j + 1]->getWeights().cols()));
+
+  int i = currentRow + index;
+  for (int batchElement = index;
+       batchElement < batchSize && i < inputData.rows();
+       i += totalThreads, batchElement += totalThreads) {
+    try {
+      decBy = getDecBy(inputData.row(i), outputData.row(i), lambda, decBy);
+    } catch (exception& err) {
+      cout << "batchElement: " << batchElement << endl;
+      cout << "input row i: " << i << endl;
+      cout << "round: " << round << endl;
+      throw err;
+    }
+  }
+  return decBy;
 }
 
 vector<MatrixXd> NeuralNetwork::getDecBy(const VectorXd& inputData,

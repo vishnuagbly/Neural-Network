@@ -2,9 +2,12 @@
 #define NEURAL_NETWORK_H
 #pragma once
 #include <Eigen/Dense>
+#include <algorithm>
 #include <fstream>
+#include <future>
 #include <iostream>
 #include <memory>
+#include <thread>
 #include <vector>
 
 #include "CostFunction.h"
@@ -22,6 +25,11 @@ class NeuralNetwork {
   std::unique_ptr<Optimizer> optimizer;
 
   int totalLayers() const { return layersProps.size(); }
+
+  std::vector<Eigen::MatrixXd> isolateTraining(
+      const Eigen::MatrixXd& inputData, const Eigen::MatrixXd& outputData,
+      int lambda, int round, int batchSize, int index, int totalThreads,
+      int currentRow) const;
 
   std::vector<Eigen::VectorXd> calcAllNodes(
       const Eigen::VectorXd& inputData) const;
