@@ -265,6 +265,7 @@ vector<vector<double>> NeuralNetwork::train(
   int k = 0;
   int itr = 0;
   optimizer->clone();
+  calcTotalThreadsToUse(batchSize);
   for (int round = 0; round < totalRounds; round++) {
     // cout << "weights:\n";
     // printWeights();
@@ -276,8 +277,7 @@ vector<vector<double>> NeuralNetwork::train(
             MatrixXd::Zero(layersProps[j + 1]->getWeights().rows(),
                            layersProps[j + 1]->getWeights().cols()));
 
-      vector<future<vector<MatrixXd, allocator<MatrixXd>>>> threads(
-          max(thread::hardware_concurrency() - 2, (unsigned)0));
+      vector<future<vector<MatrixXd>>> threads(totalThreads - 1);
 
       int batchElement = 0;
       for (int th = 0; th < threads.size(); th++) {
@@ -285,8 +285,8 @@ vector<vector<double>> NeuralNetwork::train(
             async(isolateTraining, *this, ref(inputData), ref(outputData),
                   lambda, round, batchSize, th, threads.size() + 1, i);
       }
-      isolateTraining(inputData, outputData, lambda, round, batchSize,
-                      threads.size(), threads.size() + 1, i);
+      decBy = isolateTraining(inputData, outputData, lambda, round, batchSize,
+                              threads.size(), threads.size() + 1, i);
       for (int th = 0; th < threads.size(); th++)
         decBy = decBy + threads[th].get();
 
@@ -317,6 +317,17 @@ vector<vector<double>> NeuralNetwork::train(
   }
   if (printWeightsAndLastChange) printWeightsAndUpdates(decBy);
   return res;
+}
+
+void NeuralNetwork::calcTotalThreadsToUse(const int batchSize) {
+  int maxThreads = thread::hardware_concurrency();
+  if (totalThreads <= maxThreads && totalThreads > 0) return;
+  if (batchSize < 20) {
+    totalThreads = 1;
+    return;
+  }
+  totalThreads = batchSize / 20;
+  totalThreads = max(min(maxThreads, totalThreads), 1);
 }
 
 vector<MatrixXd> NeuralNetwork::isolateTraining(const MatrixXd& inputData,
@@ -457,14 +468,14 @@ void NeuralNetwork::printWeights() const {
   }
 }
 
-void NeuralNetwork::putWeights(fstream& fout) {
+void NeuralNetwork::putWeights(string filePath) {
+  fstream fout(filePath, fstream::out | fstream::trunc);
   fout.seekp(0);
   fout.seekg(0);
   auto weights = getWeights();
   for (int i = 0; i < weights.size(); i++) {
     csv::putData(fout, weights[i]);
   }
-  while (!fout.eof()) fout << "";
 }
 
 vector<MatrixXd> NeuralNetwork::getWeights() {

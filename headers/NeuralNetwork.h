@@ -31,6 +31,8 @@ class NeuralNetwork {
       int lambda, int round, int batchSize, int index, int totalThreads,
       int currentRow) const;
 
+  void calcTotalThreadsToUse(const int batchSize);
+
   std::vector<Eigen::VectorXd> calcAllNodes(
       const Eigen::VectorXd& inputData) const;
 
@@ -47,6 +49,7 @@ class NeuralNetwork {
                                              const double totalInputs);
 
  public:
+  int totalThreads = 0;
   NeuralNetwork(const std::vector<int>& layerSizes,
                 std::vector<Eigen::MatrixXd> weights,
                 int expectedOutputSize = -1,
@@ -148,7 +151,7 @@ class NeuralNetwork {
 
   std::unique_ptr<NeuralNetwork> clone() const;
 
-  void putWeights(std::fstream& fout);
+  void putWeights(std::string filePath);
 
   std::vector<Eigen::MatrixXd> getWeights();
 
