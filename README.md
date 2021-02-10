@@ -10,3 +10,6 @@ To use this Library we need to add following flags:-
 - -I "path/to/this/Library/headers"
 
 - -o "path/to/this/Library/lib/*.cxx" "path/to/this/Library/lib/layers/*.cxx"
+
+# Documentation
+Please refer to Report.pdf for full documentation.
