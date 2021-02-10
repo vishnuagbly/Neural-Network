@@ -1,5 +1,5 @@
 # Neural-Network
-Neural Network library in C++.
+This is a super easy to use Neural Network Library. It can be used to make multiple layered Neural Networks, with lots of customization.
 
 # Requirements
 Eigen library should be already installed and available, since this library uses Eigen v3.5.8 library.
