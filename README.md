@@ -13,3 +13,25 @@ To use this Library we need to add following flags:-
 
 # Documentation
 Please refer to Report.pdf for full documentation.
+
+# Example
+```
+#include <NeuralNetwork.h>
+
+int main() {
+  auto nn = NeuralNetwork();
+  nn.add(Layers::Input(4));
+  nn.add(Layers::Dense(6, Activations::Relu()));
+  nn.add(Layers::Dense(7));
+  
+  MatrixXd inputs = getInputs();
+  MatrixXd expectedOutputs = getOutputs();
+  
+  int batchSize = 20, numOfEpochs = 5;
+  
+  nn.train(inputs, expectedOutputs, batchSize, numOfEpochs);
+  nn.printResults(inputs, expectedOutputs);
+  
+  return 0;
+}
+```
