@@ -11,6 +11,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Adding Libraries / Source Codes
 file(GLOB SOURCES "lib/*.cxx")
 file(GLOB LAYERS_SOURCES "lib/layers/*.cxx")
+
+# Created a shared library
 add_library(vnn SHARED ${SOURCES} ${LAYERS_SOURCES})
 
 # Setting Imports
