@@ -3,8 +3,8 @@
         "name": "Win32",
         "includePath": [
             "${workspaceFolder}/**",
-            "E:\\PackagesC++\\eigen-3.3.7",
-            "E:\\PackagesC++\\NN c++ by me\\headers"
+            "../eigen-3.3.7",
+            "./headers"
         ],
         "defines": [
             "_DEBUG",
@@ -12,7 +12,6 @@
             "_UNICODE"
         ],
         "windowsSdkVersion": "10.0.18362.0",
-        "compilerPath": "C:\\Program Files\\mingw-w64\\x86_64-8.1.0-posix-seh-rt_v6-rev0\\mingw64\\bin\\g++.exe",
         "cStandard": "c17",
         "cppStandard": "c++17"
     }],

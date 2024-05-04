@@ -117,7 +117,7 @@ NeuralNetwork::NeuralNetwork(vector<unique_ptr<Layer>>& layers,
     throw invalid_argument("first layer should be of inputType not " +
                            layers[0]->getName());
   for (int i = 0; i < layers.size(); i++) {
-    this->layersProps.emplace_back(move(layers[i]));
+    this->layersProps.emplace_back(std::move(layers[i]));
     if (i > 0) {
       if (layersProps[i]->getName() == Layers::Input::name)
         throw invalid_argument("only first layer can be input layer\n");
@@ -279,10 +279,11 @@ vector<vector<double>> NeuralNetwork::train(
 
       vector<future<vector<MatrixXd>>> threads(totalThreads - 1);
 
+      auto isolateTrainingPtr = &NeuralNetwork::isolateTraining;
       int batchElement = 0;
       for (int th = 0; th < threads.size(); th++) {
         threads[th] =
-            async(isolateTraining, *this, ref(inputData), ref(outputData),
+            async(isolateTrainingPtr, *this, ref(inputData), ref(outputData),
                   lambda, round, batchSize, th, threads.size() + 1, i);
       }
       decBy = isolateTraining(inputData, outputData, lambda, round, batchSize,

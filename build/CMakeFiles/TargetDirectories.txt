@@ -1,0 +1,7 @@
+/Users/vishnu/Desktop/Projects/c++/PackagesC++/NN c++ by me/build/CMakeFiles/vnn.dir
+/Users/vishnu/Desktop/Projects/c++/PackagesC++/NN c++ by me/build/CMakeFiles/edit_cache.dir
+/Users/vishnu/Desktop/Projects/c++/PackagesC++/NN c++ by me/build/CMakeFiles/rebuild_cache.dir
+/Users/vishnu/Desktop/Projects/c++/PackagesC++/NN c++ by me/build/CMakeFiles/list_install_components.dir
+/Users/vishnu/Desktop/Projects/c++/PackagesC++/NN c++ by me/build/CMakeFiles/install.dir
+/Users/vishnu/Desktop/Projects/c++/PackagesC++/NN c++ by me/build/CMakeFiles/install/local.dir
+/Users/vishnu/Desktop/Projects/c++/PackagesC++/NN c++ by me/build/CMakeFiles/install/strip.dir

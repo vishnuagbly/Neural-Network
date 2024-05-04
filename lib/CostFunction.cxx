@@ -48,7 +48,7 @@ double CostFns::Quadratic::costFn(const VectorXd& output,
                                   const VectorXd& expected) const {
   VectorXd vect = output - expected;
   vect = vect.cwiseProduct(vect) * 0.5;
-  if (vect.any() < 0) throw runtime_error("negative value not possible\n");
+  if ((vect.array() < 0).any()) throw runtime_error("negative value not possible\n");
   double res = vect.sum();
   return res;
 }

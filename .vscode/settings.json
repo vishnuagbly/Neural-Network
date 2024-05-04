@@ -1,5 +1,34 @@
 {
   "files.associations": {
-    "iosfwd": "cpp"
-  }
+    "*.embeddedhtml": "html",
+    "iosfwd": "cpp",
+    "bitset": "cpp",
+    "__availability": "cpp",
+    "__bits": "cpp",
+    "__config": "cpp",
+    "__threading_support": "cpp",
+    "__tree": "cpp",
+    "deque": "cpp",
+    "future": "cpp",
+    "locale": "cpp",
+    "string": "cpp",
+    "version": "cpp",
+    "__undef_macros": "cpp",
+    "type_traits": "cpp",
+    "algorithm": "cpp",
+    "complex": "cpp",
+    "new": "cpp",
+    "cholmodsupport": "cpp",
+    "metissupport": "cpp",
+    "bvh": "cpp"
+  },
+  "cSpell.words": [
+    "cwise",
+    "Eigen",
+    "fout",
+    "lasy",
+    "Optimzer",
+    "regularisation",
+    "vect"
+  ]
 }
